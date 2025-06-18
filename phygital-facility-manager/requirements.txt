@@ -1,0 +1,24 @@
+# Core application
+openai==1.12.0
+openai-agents==0.0.17
+flask==2.3.3
+flask-cors==4.0.0
+python-dotenv==1.0.0
+gunicorn==21.2.0
+
+# Database integration
+supabase==1.2.0
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.23
+
+# Google API integrations
+google-api-python-client==2.97.0
+google-auth==2.22.0
+google-auth-oauthlib==1.0.0
+google-auth-httplib2==0.1.0
+
+# Utilities
+cryptography==41.0.5  # For securely storing tokens
+requests==2.31.0
+pyjwt==2.8.0
+python-dateutil==2.8.2
