@@ -1,6 +1,8 @@
 # Environment variables
 .env
 *.env
+.env_file.txt
+env_file.txt
 
 # Python
 __pycache__/
