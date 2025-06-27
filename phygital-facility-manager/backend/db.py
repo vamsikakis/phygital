@@ -1,25 +1,8 @@
-import os
-from supabase import create_client, Client
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Text, DateTime, Boolean, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
-from dotenv import load_dotenv
+# Import from the new database module
+from database import *
 
-# Load environment variables
-load_dotenv()
-
-# Supabase client
-supabase_url = os.getenv("SUPABASE_URL")
-supabase_key = os.getenv("SUPABASE_KEY")
-supabase_service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-
-# Create supabase client
-supabase: Client = create_client(supabase_url, supabase_key)
-
-# SQLAlchemy setup for more complex operations
-Base = declarative_base()
-engine = create_engine(os.getenv("POSTGRES_CONNECTION_STRING"))
-Session = sessionmaker(bind=engine)
+# For backward compatibility, import everything from database module
+# This allows existing code to continue working without changes
 
 # Define models
 class Document(Base):
@@ -210,30 +193,100 @@ def init_db():
 def get_db_session():
     return Session()
 
-# Common database operations
+# Legacy functions for backward compatibility
+# These now use the new database module functions
+
 def get_all(table_name):
-    """Get all records from a table using Supabase"""
-    response = supabase.table(table_name).select("*").execute()
-    return response.data
+    """Get all records from a table"""
+    # This is a legacy function - use get_all_records() from database module instead
+    from database import get_all_records
+    # Map table names to model classes
+    model_map = {
+        'users': User,
+        'documents': Document,
+        'tickets': Ticket,
+        'announcements': Announcement,
+        'events': Event,
+        'faqs': FAQ,
+        'ai_query_logs': AIQueryLog
+    }
+    model_class = model_map.get(table_name)
+    if model_class:
+        return [record.__dict__ for record in get_all_records(model_class)]
+    return []
 
 def get_by_id(table_name, id):
-    """Get a record by ID using Supabase"""
-    response = supabase.table(table_name).select("*").eq("id", id).execute()
-    if len(response.data) > 0:
-        return response.data[0]
+    """Get a record by ID"""
+    # This is a legacy function - use get_record_by_id() from database module instead
+    from database import get_record_by_id
+    model_map = {
+        'users': User,
+        'documents': Document,
+        'tickets': Ticket,
+        'announcements': Announcement,
+        'events': Event,
+        'faqs': FAQ,
+        'ai_query_logs': AIQueryLog
+    }
+    model_class = model_map.get(table_name)
+    if model_class:
+        record = get_record_by_id(model_class, id)
+        return record.__dict__ if record else None
     return None
 
 def insert(table_name, data):
-    """Insert a record using Supabase"""
-    response = supabase.table(table_name).insert(data).execute()
-    return response.data
+    """Insert a record"""
+    # This is a legacy function - use create_record() from database module instead
+    from database import create_record
+    model_map = {
+        'users': User,
+        'documents': Document,
+        'tickets': Ticket,
+        'announcements': Announcement,
+        'events': Event,
+        'faqs': FAQ,
+        'ai_query_logs': AIQueryLog
+    }
+    model_class = model_map.get(table_name)
+    if model_class:
+        record = create_record(model_class, **data)
+        return [record.__dict__] if record else []
+    return []
 
 def update(table_name, id, data):
-    """Update a record using Supabase"""
-    response = supabase.table(table_name).update(data).eq("id", id).execute()
-    return response.data
+    """Update a record"""
+    # This is a legacy function - use update_record() from database module instead
+    from database import update_record
+    model_map = {
+        'users': User,
+        'documents': Document,
+        'tickets': Ticket,
+        'announcements': Announcement,
+        'events': Event,
+        'faqs': FAQ,
+        'ai_query_logs': AIQueryLog
+    }
+    model_class = model_map.get(table_name)
+    if model_class:
+        record = update_record(model_class, id, **data)
+        return [record.__dict__] if record else []
+    return []
 
 def delete(table_name, id):
-    """Delete a record using Supabase"""
-    response = supabase.table(table_name).delete().eq("id", id).execute()
-    return response.data
+    """Delete a record"""
+    # This is a legacy function - use delete_record() from database module instead
+    from database import delete_record
+    model_map = {
+        'users': User,
+        'documents': Document,
+        'tickets': Ticket,
+        'announcements': Announcement,
+        'events': Event,
+        'faqs': FAQ,
+        'ai_query_logs': AIQueryLog
+    }
+    model_class = model_map.get(table_name)
+    if model_class:
+        success = delete_record(model_class, id)
+        return [{'deleted': success}] if success else []
+    return []

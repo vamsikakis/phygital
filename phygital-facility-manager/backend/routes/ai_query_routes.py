@@ -46,17 +46,60 @@ def ask_ai():
             'options': options
         }
         
-        # Use OpenAI Assistant service
+        # Use both OpenAI Assistant service and local vector database for enhanced context
         try:
             from services.openai_assistant_service import openai_assistant_service
-            
-            # Get all uploaded files to provide context
+            from services.vector_service import vector_service
+
+            # First, get relevant context from local vector database
+            vector_context = ""
+            vector_sources = []
+            try:
+                # Perform semantic search on local vector database
+                similar_docs = vector_service.similarity_search(
+                    query=query,
+                    limit=5,
+                    threshold=0.6
+                )
+
+                if similar_docs:
+                    current_app.logger.info(f"Found {len(similar_docs)} relevant documents in vector database")
+
+                    # Build context from similar documents
+                    context_parts = []
+                    for doc in similar_docs:
+                        metadata = doc.get('metadata', {})
+                        title = metadata.get('title', 'Unknown Document')
+                        category = metadata.get('category', 'General')
+
+                        context_parts.append(f"Document: {title} (Category: {category})")
+                        context_parts.append(f"Content: {doc['content'][:500]}...")
+                        context_parts.append("---")
+
+                        vector_sources.append({
+                            'type': 'vector_document',
+                            'title': title,
+                            'category': category,
+                            'similarity_score': doc['similarity_score'],
+                            'document_id': doc['document_id']
+                        })
+
+                    vector_context = "\n".join(context_parts)
+                    current_app.logger.info(f"Built vector context with {len(vector_context)} characters")
+                else:
+                    current_app.logger.info("No relevant documents found in vector database")
+
+            except Exception as vector_error:
+                current_app.logger.warning(f"Error querying vector database: {str(vector_error)}")
+                # Continue without vector context if it fails
+
+            # Get all uploaded files to provide context to OpenAI Assistant
             uploaded_files = openai_assistant_service.list_files()
-            
+
             # Filter files to only include supported formats for OpenAI Assistant file search
             # Supported formats: txt, pdf, docx, doc, rtf, md, json, csv, xml, html
             supported_extensions = {'.txt', '.pdf', '.docx', '.doc', '.rtf', '.md', '.json', '.csv', '.xml', '.html'}
-            
+
             supported_files = []
             if uploaded_files:
                 for file_info in uploaded_files:
@@ -66,31 +109,50 @@ def ask_ai():
                         supported_files.append(file_info["file_id"])
                     else:
                         current_app.logger.info(f"Skipping unsupported file format: {filename} ({file_extension})")
-            
+
             file_ids = supported_files
             current_app.logger.info(f"Found {len(file_ids)} supported files to attach to query")
             
             # Create a thread for this query
             thread_response = openai_assistant_service.create_thread()
             thread_id = thread_response["thread_id"]
-            
-            # Add the user's message to the thread with file attachments
-            openai_assistant_service.add_message(thread_id, query, role="user", file_ids=file_ids)
-            
+
+            # Enhance the query with vector context if available
+            enhanced_query = query
+            if vector_context:
+                enhanced_query = f"""Based on the following relevant information from our knowledge base:
+
+{vector_context}
+
+Please answer this question: {query}
+
+If the information above is relevant, use it to provide a comprehensive answer. If not, please answer based on your general knowledge about apartment/facility management."""
+
+            # Add the enhanced message to the thread with file attachments
+            openai_assistant_service.add_message(thread_id, enhanced_query, role="user", file_ids=file_ids)
+
             # Run the assistant on the thread
             run = openai_assistant_service.run_assistant_on_thread(thread_id)
-            
+
             # Get the messages from the thread
             messages = openai_assistant_service.get_thread_messages(thread_id)
-            
+
             # Extract the assistant's response
             assistant_messages = [msg for msg in messages if msg["role"] == "assistant"]
             answer = assistant_messages[0]["content"] if assistant_messages else "No response from assistant"
-            
+
+            # Combine sources from both OpenAI files and vector database
+            all_sources = []
+            all_sources.extend([f"openai_file_{fid}" for fid in file_ids])
+            all_sources.extend(vector_sources)
+
             # Format the result
             result = {
                 "answer": answer,
-                "sources": [f"file_{fid}" for fid in file_ids],  # Include file references as sources
+                "sources": all_sources,
+                "vector_context_used": bool(vector_context),
+                "vector_documents_found": len(vector_sources),
+                "openai_files_used": len(file_ids),
                 "suggestions": []  # We'll implement suggestions later
             }
             

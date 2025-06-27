@@ -138,37 +138,80 @@ def create_document():
             else:
                 current_app.logger.info(f"File {file.filename} does not support OCR processing")
             
-            # If we have extracted text, create an enhanced text file for better vector store indexing
+            # Prepare content for vector storage
+            content_for_vector_db = ""
             enhanced_content_path = None
+
             if extracted_text.strip():
-                # Create a text file with the original filename and extracted content
+                # Create enhanced content for both OpenAI and local vector DB
+                content_for_vector_db = f"Document: {file.filename}\n"
+                content_for_vector_db += f"Title: {title}\n"
+                if description:
+                    content_for_vector_db += f"Description: {description}\n"
+                content_for_vector_db += f"Category: {category}\n"
+                content_for_vector_db += f"\n--- EXTRACTED CONTENT ---\n\n"
+                content_for_vector_db += extracted_text
+
+                # Create enhanced text file for OpenAI
                 enhanced_content_path = temp_path + "_enhanced.txt"
                 with open(enhanced_content_path, 'w', encoding='utf-8') as enhanced_file:
-                    enhanced_file.write(f"Document: {file.filename}\n")
-                    enhanced_file.write(f"Title: {title}\n")
-                    if description:
-                        enhanced_file.write(f"Description: {description}\n")
-                    enhanced_file.write(f"Category: {category}\n")
-                    enhanced_file.write(f"\n--- EXTRACTED CONTENT ---\n\n")
-                    enhanced_file.write(extracted_text)
-                
-                # Upload the enhanced text file to vector store for better searchability
+                    enhanced_file.write(content_for_vector_db)
+
+                # Upload the enhanced text file to OpenAI vector store
                 enhanced_filename = f"{os.path.splitext(file.filename)[0]}_content.txt"
                 result = openai_assistant_service.upload_file_to_vector_store(enhanced_content_path, enhanced_filename)
-                
+
                 # Clean up enhanced content file
                 os.remove(enhanced_content_path)
-                
-                current_app.logger.info(f"Uploaded enhanced text content for {file.filename} to vector store")
+
+                current_app.logger.info(f"Uploaded enhanced text content for {file.filename} to OpenAI vector store")
             else:
                 # Upload original file to OpenAI Vector Store
                 result = openai_assistant_service.upload_file_to_vector_store(temp_path, file.filename)
+                # Use basic metadata for vector DB if no text extracted
+                content_for_vector_db = f"Document: {file.filename}\nTitle: {title}\nDescription: {description}\nCategory: {category}"
+
+            # Store document embedding in local PostgreSQL vector database
+            try:
+                from services.vector_service import vector_service
+
+                # Create unique document ID for vector storage
+                vector_doc_id = f"doc_{document_id}_{result.get('file_id', '')}"
+
+                # Store in local vector database for semantic search
+                vector_success = vector_service.store_document_embedding(
+                    document_id=vector_doc_id,
+                    content=content_for_vector_db,
+                    metadata={
+                        'original_filename': file.filename,
+                        'title': title,
+                        'description': description,
+                        'category': category,
+                        'openai_file_id': result.get('file_id'),
+                        'document_id': document_id,
+                        'upload_timestamp': datetime.now().isoformat(),
+                        'ocr_processed': ocr_result is not None,
+                        'text_extracted': bool(extracted_text.strip())
+                    }
+                )
+
+                if vector_success:
+                    current_app.logger.info(f"Successfully stored document embedding in local vector database: {vector_doc_id}")
+                else:
+                    current_app.logger.warning(f"Failed to store document embedding in local vector database: {vector_doc_id}")
+
+            except Exception as vector_error:
+                current_app.logger.error(f"Error storing document in vector database: {str(vector_error)}")
+                # Don't fail the upload if vector storage fails
             
             # Clean up temp file
             os.remove(temp_path)
             
-            # Create document metadata with OCR information
+            # Create document metadata with OCR and vector database information
+            import uuid
             document_id = str(uuid.uuid4())
+            vector_doc_id = f"doc_{document_id}_{result.get('file_id', '')}"
+
             document_metadata = {
                 'id': document_id,
                 'title': title,
@@ -176,10 +219,13 @@ def create_document():
                 'category': category,
                 'filename': file.filename,
                 'file_id': result.get('file_id'),
+                'vector_doc_id': vector_doc_id,
                 'created_at': datetime.now().isoformat(),
                 'status': 'uploaded',
                 'ocr_processed': ocr_result is not None,
                 'text_extracted': bool(extracted_text.strip()),
+                'vector_stored': vector_success if 'vector_success' in locals() else False,
+                'searchable': True,  # Document is now searchable via vector similarity
                 'ocr_metadata': {
                     'success': ocr_result.get('success', False) if ocr_result else False,
                     'confidence': ocr_result.get('confidence', 0) if ocr_result else 0,
@@ -187,6 +233,12 @@ def create_document():
                     'character_count': ocr_result.get('character_count', 0) if ocr_result else 0,
                     'pages_processed': ocr_result.get('pages_processed', 0) if ocr_result else 0,
                     'error': ocr_result.get('error') if ocr_result and not ocr_result.get('success') else None
+                },
+                'vector_metadata': {
+                    'stored_in_vector_db': vector_success if 'vector_success' in locals() else False,
+                    'vector_document_id': vector_doc_id,
+                    'content_length': len(content_for_vector_db),
+                    'embedding_model': 'text-embedding-3-small'
                 }
             }
             
@@ -250,33 +302,123 @@ def update_document(document_id):
         current_app.logger.error(f"Error updating document {document_id}: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@documents_bp.route('/<document_id>', methods=['DELETE'])
-@admin_required
-def delete_document(document_id):
-    """Delete a document"""
+@documents_bp.route('/search', methods=['POST'])
+def search_documents():
+    """Search documents using semantic similarity"""
     try:
-        from db import Document
-        session = get_db_session()
-        document = session.query(Document).filter(Document.id == document_id).first()
-        
-        if not document:
-            return jsonify({'error': 'Document not found'}), 404
-            
-        # Delete file from storage
+        data = request.json
+        if not data or 'query' not in data:
+            return jsonify({'error': 'Query is required'}), 400
+
+        query = data['query']
+        limit = data.get('limit', 10)
+        threshold = data.get('threshold', 0.7)
+
+        # Use vector service for semantic search
+        from services.vector_service import vector_service
+
+        search_results = vector_service.similarity_search(
+            query=query,
+            limit=limit,
+            threshold=threshold
+        )
+
+        # Transform results to include document metadata
+        documents = []
+        for result in search_results:
+            metadata = result.get('metadata', {})
+            document = {
+                'id': metadata.get('document_id', result['document_id']),
+                'title': metadata.get('title', 'Unknown'),
+                'description': metadata.get('description', ''),
+                'category': metadata.get('category', 'general'),
+                'filename': metadata.get('original_filename', ''),
+                'similarity_score': result['similarity_score'],
+                'content_preview': result['content'][:200] + '...' if len(result['content']) > 200 else result['content'],
+                'openai_file_id': metadata.get('openai_file_id'),
+                'vector_doc_id': result['document_id'],
+                'created_at': metadata.get('upload_timestamp', result.get('created_at')),
+                'ocr_processed': metadata.get('ocr_processed', False),
+                'text_extracted': metadata.get('text_extracted', False)
+            }
+            documents.append(document)
+
+        result = {
+            'documents': documents,
+            'total': len(documents),
+            'query': query,
+            'search_type': 'semantic_similarity',
+            'threshold': threshold
+        }
+
+        current_app.logger.info(f"Semantic search for '{query}' returned {len(documents)} results")
+        return jsonify(result)
+
+    except Exception as e:
+        current_app.logger.error(f"Error in semantic document search: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@documents_bp.route('/<document_id>', methods=['DELETE'])
+def delete_document(document_id):
+    """Delete a document from both OpenAI and local vector database"""
+    try:
+        # Try to delete from OpenAI first (document_id might be OpenAI file_id)
         try:
-            from integrations.storage import delete_file
-            storage_path = document.storage_path
-            if storage_path:
-                delete_file('documents', storage_path)
+            from services.openai_assistant_service import openai_assistant_service
+            openai_assistant_service.delete_file(document_id)
+            current_app.logger.info(f"Deleted document {document_id} from OpenAI")
         except Exception as e:
-            current_app.logger.warning(f"Error deleting document file: {str(e)}")
-        
-        # Delete document record
-        session.delete(document)
-        session.commit()
-        
-        return jsonify({'success': True, 'message': 'Document deleted successfully'})
-        
+            current_app.logger.warning(f"Could not delete from OpenAI (might not exist): {str(e)}")
+
+        # Delete from local vector database
+        try:
+            from services.vector_service import vector_service
+
+            # Try different possible vector document IDs
+            possible_vector_ids = [
+                document_id,  # Direct ID
+                f"doc_{document_id}",  # With doc_ prefix
+                f"doc_{document_id}_{document_id}"  # Full format
+            ]
+
+            deleted_from_vector = False
+            for vector_id in possible_vector_ids:
+                if vector_service.delete_document_embedding(vector_id):
+                    current_app.logger.info(f"Deleted document {vector_id} from vector database")
+                    deleted_from_vector = True
+                    break
+
+            if not deleted_from_vector:
+                current_app.logger.warning(f"Could not find document {document_id} in vector database")
+
+        except Exception as e:
+            current_app.logger.warning(f"Error deleting from vector database: {str(e)}")
+
+        # Try to delete from local database if it exists
+        try:
+            from db import Document
+            session = get_db_session()
+            document = session.query(Document).filter(Document.id == document_id).first()
+
+            if document:
+                # Delete file from storage
+                try:
+                    from integrations.storage import delete_file
+                    storage_path = document.storage_path
+                    if storage_path:
+                        delete_file('documents', storage_path)
+                except Exception as e:
+                    current_app.logger.warning(f"Error deleting document file: {str(e)}")
+
+                # Delete document record
+                session.delete(document)
+                session.commit()
+                current_app.logger.info(f"Deleted document {document_id} from local database")
+        except Exception as e:
+            current_app.logger.warning(f"Error deleting from local database: {str(e)}")
+
+        return jsonify({'success': True, 'message': 'Document deleted successfully from all systems'})
+
     except Exception as e:
         current_app.logger.error(f"Error deleting document {document_id}: {str(e)}")
         return jsonify({'error': str(e)}), 500

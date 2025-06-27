@@ -25,14 +25,19 @@ import {
   DialogActions,
   DialogContent,
   DialogContentText,
-  DialogTitle
+  DialogTitle,
+  Tabs,
+  Tab
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DescriptionIcon from '@mui/icons-material/Description';
 import ArticleIcon from '@mui/icons-material/Article';
 import DownloadIcon from '@mui/icons-material/Download';
+import SearchIcon from '@mui/icons-material/Search';
+import UploadIcon from '@mui/icons-material/Upload';
 import documentService, { Document } from '../services/documentService';
+import SemanticSearch from '../components/SemanticSearch';
 
 // Using the Document interface imported from documentService
 
@@ -50,6 +55,7 @@ const DocumentUpload: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Document categories and types
@@ -201,7 +207,31 @@ const DocumentUpload: React.FC = () => {
         Knowledge Base Document Management
       </Typography>
 
-      <Grid container spacing={3}>
+      {/* Tabs */}
+      <Paper elevation={1} sx={{ mb: 3 }}>
+        <Tabs
+          value={activeTab}
+          onChange={(_, newValue) => setActiveTab(newValue)}
+          variant="fullWidth"
+        >
+          <Tab
+            icon={<UploadIcon />}
+            label="Upload & Manage"
+            id="tab-0"
+            aria-controls="tabpanel-0"
+          />
+          <Tab
+            icon={<SearchIcon />}
+            label="Semantic Search"
+            id="tab-1"
+            aria-controls="tabpanel-1"
+          />
+        </Tabs>
+      </Paper>
+
+      {/* Tab Content */}
+      {activeTab === 0 && (
+        <Grid container spacing={3}>
         {/* Upload Form */}
         <Grid item xs={12} md={5}>
           <Paper elevation={2} sx={{ p: 3 }}>
@@ -385,6 +415,28 @@ const DocumentUpload: React.FC = () => {
           </Paper>
         </Grid>
       </Grid>
+      )}
+
+      {/* Semantic Search Tab */}
+      {activeTab === 1 && (
+        <Box>
+          <Typography variant="h6" gutterBottom>
+            AI-Powered Document Search
+          </Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Search through uploaded documents using natural language. The AI will find relevant documents based on meaning, not just keywords.
+          </Typography>
+
+          <SemanticSearch
+            onResultSelect={(result) => {
+              console.log('Selected document:', result);
+              // You can add custom handling here, like opening the document
+            }}
+            maxResults={20}
+            showFilters={true}
+          />
+        </Box>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog
