@@ -21,20 +21,43 @@ class VectorService:
     
     def __init__(self):
         """Initialize the vector service with OpenAI and database connections"""
-        self.openai_client = openai.OpenAI(api_key=config.OPENAI_API_KEY)
+        # Get OpenAI API key from environment or config
+        api_key = os.getenv('OPENAI_API_KEY')
+        if not api_key and hasattr(config, 'OPENAI_API_KEY'):
+            api_key = config.OPENAI_API_KEY
+        elif not api_key and isinstance(config, dict):
+            api_key = config.get('OPENAI_API_KEY')
+
+        if not api_key:
+            raise ValueError("OpenAI API key not found in environment or config")
+
+        self.openai_client = openai.OpenAI(api_key=api_key)
         self.embedding_model = "text-embedding-3-small"
         self.embedding_dimension = 1536
         
     def get_db_connection(self):
         """Get database connection"""
         try:
-            conn = psycopg2.connect(
-                host=config.DB_HOST,
-                database=config.DB_NAME,
-                user=config.DB_USER,
-                password=config.DB_PASSWORD,
-                port=config.DB_PORT
-            )
+            # Get database configuration from environment or config
+            db_config = {
+                'host': os.getenv('DB_HOST') or getattr(config, 'DB_HOST', None),
+                'database': os.getenv('DB_NAME') or getattr(config, 'DB_NAME', None),
+                'user': os.getenv('DB_USER') or getattr(config, 'DB_USER', None),
+                'password': os.getenv('DB_PASSWORD') or getattr(config, 'DB_PASSWORD', None),
+                'port': os.getenv('DB_PORT', '5432') or getattr(config, 'DB_PORT', '5432')
+            }
+
+            # Handle config as dictionary
+            if isinstance(config, dict):
+                db_config.update({
+                    'host': db_config['host'] or config.get('DB_HOST'),
+                    'database': db_config['database'] or config.get('DB_NAME'),
+                    'user': db_config['user'] or config.get('DB_USER'),
+                    'password': db_config['password'] or config.get('DB_PASSWORD'),
+                    'port': db_config['port'] or config.get('DB_PORT', '5432')
+                })
+
+            conn = psycopg2.connect(**db_config)
             return conn
         except Exception as e:
             logger.error(f"Database connection error: {e}")

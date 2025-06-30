@@ -287,5 +287,29 @@ class OpenAIAssistantService:
             current_app.logger.error(f"Error deleting file {file_id}: {str(e)}")
             raise
 
+    def download_file(self, file_id: str) -> tuple:
+        """Download a file from OpenAI and return its content and filename"""
+        try:
+            # Get file info first
+            file_info = self.client.files.retrieve(file_id)
+            filename = file_info.filename
+
+            # Download file content using the correct method
+            file_response = self.client.files.content(file_id)
+
+            # The response should have a .content attribute with the bytes
+            if hasattr(file_response, 'content'):
+                return file_response.content, filename
+            elif hasattr(file_response, 'read'):
+                return file_response.read(), filename
+            else:
+                # Try to get the content directly
+                return file_response, filename
+
+        except Exception as e:
+            current_app.logger.error(f"Error downloading file {file_id}: {str(e)}")
+            current_app.logger.error(f"Exception details: {type(e).__name__}: {str(e)}")
+            return None, None
+
 # Create a singleton instance
 openai_assistant_service = OpenAIAssistantService()

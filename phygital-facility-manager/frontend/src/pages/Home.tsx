@@ -12,32 +12,48 @@ import {
 } from '@mui/material';
 import ArticleIcon from '@mui/icons-material/Article';
 import ForumIcon from '@mui/icons-material/Forum';
-import HelpIcon from '@mui/icons-material/Help';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import ClickUpIcon from '../components/icons/ClickUpIcon';
 import { useNavigate } from 'react-router-dom';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
   
   const features = [
-    { 
-      title: "Apartment Knowledge Base", 
-      description: "Access community documents, bylaws, and important information about Gopalan Atlantis.", 
-      icon: <ArticleIcon sx={{ fontSize: 40 }} />, 
+    {
+      title: "Apartment Knowledge Base",
+      description: "Access community documents, bylaws, and important information about Gopalan Atlantis.",
+      icon: <ArticleIcon sx={{ fontSize: 40 }} />,
       path: "/knowledge-base",
       color: "#3f51b5"
     },
-    { 
-      title: "Owner Communication", 
-      description: "Stay updated with announcements, events, and engage with the community.", 
-      icon: <ForumIcon sx={{ fontSize: 40 }} />, 
+    {
+      title: "Owner Communication",
+      description: "Stay updated with announcements, events, and engage with the community.",
+      icon: <ForumIcon sx={{ fontSize: 40 }} />,
       path: "/communication",
       color: "#f50057"
     },
-    { 
-      title: "Help Desk", 
-      description: "Get assistance with your queries or submit service requests.", 
-      icon: <HelpIcon sx={{ fontSize: 40 }} />, 
-      path: "/help-desk",
+    {
+      title: "Financial Dashboard",
+      description: "Comprehensive financial management with Firefly III integration for budgets and expenses.",
+      icon: <AccountBalanceIcon sx={{ fontSize: 40 }} />,
+      path: "/financial-dashboard",
+      color: "#4caf50"
+    },
+    {
+      title: "ClickUp Tasks",
+      description: "Manage facility maintenance tasks and track progress with ClickUp integration.",
+      icon: <ClickUpIcon size={40} className="text-current" />,
+      path: "/clickup-tasks",
+      color: "#7B68EE"
+    },
+    {
+      title: "AI Assistant",
+      description: "Get intelligent assistance for facility management and apartment queries.",
+      icon: <SmartToyIcon sx={{ fontSize: 40 }} />,
+      path: "/openai-assistant",
       color: "#009688"
     }
   ];
@@ -62,20 +78,20 @@ const Home: React.FC = () => {
         <Typography variant="subtitle1" mb={3}>
           Your all-in-one facility management assistant
         </Typography>
-        <Button 
-          variant="contained" 
-          color="secondary" 
+        <Button
+          variant="contained"
+          color="secondary"
           size="large"
-          onClick={() => navigate("/help-desk")}
+          onClick={() => navigate("/openai-assistant")}
         >
-          Ask for Help
+          Get AI Assistance
         </Button>
       </Paper>
 
       {/* Feature Cards */}
       <Grid container spacing={3}>
         {features.map((feature) => (
-          <Grid item xs={12} sm={4} key={feature.title}>
+          <Grid item xs={12} sm={6} md={3} key={feature.title}>
             <Card 
               elevation={3} 
               sx={{ 

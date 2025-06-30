@@ -1,397 +1,205 @@
+"""
+Document Export Service
+Simplified version without Supabase dependencies
+"""
+
 import os
-import io
-import uuid
 import json
+import uuid
 from datetime import datetime
-import requests
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Dict, List, Any, Optional
 from dotenv import load_dotenv
-import base64
 
 # Import our integration modules
-from integrations.supabase import get_supabase_client
 from integrations.storage import get_download_url, record_download
-from db import get_db_session
+from db import get_db_session, Document
 
 # Load environment variables
 load_dotenv()
 
-# Supabase and Edge Function configuration
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-
-
 class DocumentExporter:
     """
-    Handles document download and export functionality including PDF generation,
-    file conversion, and export to various formats.
+    Handles document export operations
+    Simplified version for Neon PostgreSQL
     """
     
     def __init__(self):
         """Initialize the document exporter with necessary connections"""
-        self.supabase = get_supabase_client()
         self.db_session = get_db_session()
     
     def get_document(self, document_id: str) -> Dict[str, Any]:
         """
-        Retrieve document details from the database
+        Get document metadata from database
         
         Args:
-            document_id: ID of the document
+            document_id: The ID of the document to retrieve
             
         Returns:
-            Document details or None if not found
+            Dictionary containing document metadata
         """
-        response = self.supabase.table('documents').select('*').eq('id', document_id).execute()
-        
-        if response.data and len(response.data) > 0:
-            return response.data[0]
-        return None
-
-    def download_original_document(self, document_id: str, user_id: Optional[str] = None) -> Tuple[str, Dict[str, Any]]:
-        """
-        Generate a download URL for the original document file
-        
-        Args:
-            document_id: ID of the document to download
-            user_id: ID of the user downloading the document (for tracking)
-            
-        Returns:
-            Tuple of (download_url, document_data)
-        """
-        document = self.get_document(document_id)
-        
-        if not document:
-            raise ValueError(f"Document with ID {document_id} not found")
-        
-        # Get the storage path from the document record
-        storage_path = document.get('storage_path')
-        
-        if not storage_path:
-            raise ValueError(f"Document {document_id} has no associated storage path")
-        
-        # Get bucket name from storage path or use default
-        bucket_name = 'documents'  # Default bucket
-        
-        # Generate a signed download URL
-        download_url = get_download_url(bucket_name, storage_path, expiration_seconds=3600)
-        
-        if not download_url:
-            raise ValueError(f"Failed to generate download URL for document {document_id}")
-        
-        # Record the download if user_id is provided
-        if user_id:
-            record_download(
-                user_id=user_id,
-                file_id=document_id,
-                file_type='document',
-                file_name=document.get('title', 'Unknown')
-            )
-            
-        return download_url, document
-    
-    def generate_pdf(self, document_id: str, template: str = "default", 
-                    user_id: Optional[str] = None, options: Dict[str, Any] = None) -> Dict[str, Any]:
-        """
-        Generate a PDF version of a document using the Edge Function
-        
-        Args:
-            document_id: ID of the document to convert
-            template: Template name to use for PDF generation
-            user_id: ID of the user requesting PDF generation (for tracking)
-            options: Additional options for PDF generation
-            
-        Returns:
-            Dictionary with PDF generation results including download URL
-        """
-        # Call the generate-pdf edge function
-        if not options:
-            options = {}
-            
-        if user_id:
-            options["user_id"] = user_id
-            
-        # Construct the payload
-        payload = {
-            "source_type": "document",
-            "source_id": document_id,
-            "template": template,
-            "options": options
-        }
-        
-        # Call the edge function
         try:
-            # Use service role key for edge function access
-            headers = {
-                "apikey": SUPABASE_SERVICE_KEY,
-                "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
-                "Content-Type": "application/json"
+            from db import get_record_by_id
+            document = get_record_by_id(Document, document_id)
+            
+            if not document:
+                return {"error": "Document not found"}
+            
+            return {
+                "id": document.id,
+                "title": document.title,
+                "description": document.description,
+                "content": document.content,
+                "category": document.category,
+                "file_url": document.file_url,
+                "created_at": document.created_at.isoformat() if document.created_at else None,
+                "last_updated": document.last_updated.isoformat() if document.last_updated else None
             }
             
-            response = requests.post(
-                f"{SUPABASE_URL}/functions/v1/generate-pdf",
-                headers=headers,
-                json=payload
-            )
-            
-            if response.status_code != 200:
-                raise ValueError(f"PDF generation failed: {response.text}")
-            
-            result = response.json()
-            
-            # Record the download if user_id is provided
-            if user_id:
-                record_download(
-                    user_id=user_id,
-                    file_id=document_id,
-                    file_type='document_pdf',
-                    file_name=result.get('filename')
-                )
-                
-            return result
         except Exception as e:
-            raise ValueError(f"Error calling PDF generation function: {str(e)}")
+            return {"error": f"Failed to retrieve document: {str(e)}"}
     
-    def convert_document(self, document_id: str, target_format: str,
-                        user_id: Optional[str] = None) -> Dict[str, Any]:
+    def export_to_json(self, document_ids: List[str]) -> Dict[str, Any]:
         """
-        Convert a document to another format (e.g., DOCX to PDF, PDF to TXT)
-        Uses the document processing edge function for conversion
+        Export documents to JSON format
         
         Args:
-            document_id: ID of the document to convert
-            target_format: Target format for conversion (pdf, txt, docx, etc.)
-            user_id: ID of the user requesting conversion (for tracking)
+            document_ids: List of document IDs to export
             
         Returns:
-            Dictionary with conversion results including download URL
+            Dictionary containing export results
         """
-        # Call the process-documents edge function
-        payload = {
-            "document_id": document_id,
-            "action": "convert_to_" + target_format.lower()
-        }
-        
-        # Call the edge function
         try:
-            # Use service role key for edge function access
-            headers = {
-                "apikey": SUPABASE_SERVICE_KEY,
-                "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
-                "Content-Type": "application/json"
+            documents = []
+            for doc_id in document_ids:
+                doc = self.get_document(doc_id)
+                if "error" not in doc:
+                    documents.append(doc)
+            
+            export_data = {
+                "export_type": "json",
+                "export_date": datetime.now().isoformat(),
+                "document_count": len(documents),
+                "documents": documents
             }
             
-            response = requests.post(
-                f"{SUPABASE_URL}/functions/v1/process-documents",
-                headers=headers,
-                json=payload
-            )
+            return {
+                "success": True,
+                "data": export_data,
+                "format": "json"
+            }
             
-            if response.status_code != 200:
-                raise ValueError(f"Document conversion failed: {response.text}")
-            
-            result = response.json()
-            
-            # Record the download if user_id is provided
-            if user_id:
-                record_download(
-                    user_id=user_id,
-                    file_id=document_id,
-                    file_type=f'document_{target_format}',
-                    file_name=result.get('pdf_filename', f"document.{target_format}")
-                )
-                
-            return result
         except Exception as e:
-            raise ValueError(f"Error calling document conversion function: {str(e)}")
+            return {
+                "success": False,
+                "error": f"JSON export failed: {str(e)}"
+            }
     
-    def extract_text(self, document_id: str, user_id: Optional[str] = None) -> Dict[str, Any]:
+    def export_to_csv(self, document_ids: List[str]) -> Dict[str, Any]:
         """
-        Extract text content from a document
-        Uses the document processing edge function for text extraction
+        Export documents to CSV format
         
         Args:
-            document_id: ID of the document to extract text from
-            user_id: ID of the user requesting extraction (for tracking)
+            document_ids: List of document IDs to export
             
         Returns:
-            Dictionary with extraction results including text content
+            Dictionary containing export results
         """
-        # Call the process-documents edge function
-        payload = {
-            "document_id": document_id,
-            "action": "extract_text"
-        }
-        
-        # Call the edge function
         try:
-            # Use service role key for edge function access
-            headers = {
-                "apikey": SUPABASE_SERVICE_KEY,
-                "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
-                "Content-Type": "application/json"
+            import csv
+            import io
+            
+            # Create CSV content
+            output = io.StringIO()
+            writer = csv.writer(output)
+            
+            # Write header
+            writer.writerow(['ID', 'Title', 'Description', 'Category', 'Created At', 'Last Updated'])
+            
+            # Write document data
+            for doc_id in document_ids:
+                doc = self.get_document(doc_id)
+                if "error" not in doc:
+                    writer.writerow([
+                        doc.get('id', ''),
+                        doc.get('title', ''),
+                        doc.get('description', ''),
+                        doc.get('category', ''),
+                        doc.get('created_at', ''),
+                        doc.get('last_updated', '')
+                    ])
+            
+            csv_content = output.getvalue()
+            output.close()
+            
+            return {
+                "success": True,
+                "data": csv_content,
+                "format": "csv",
+                "filename": f"documents_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
             }
             
-            response = requests.post(
-                f"{SUPABASE_URL}/functions/v1/process-documents",
-                headers=headers,
-                json=payload
-            )
-            
-            if response.status_code != 200:
-                raise ValueError(f"Text extraction failed: {response.text}")
-            
-            return response.json()
         except Exception as e:
-            raise ValueError(f"Error calling text extraction function: {str(e)}")
+            return {
+                "success": False,
+                "error": f"CSV export failed: {str(e)}"
+            }
     
-    def generate_document_summary(self, document_id: str, user_id: Optional[str] = None) -> Dict[str, Any]:
+    def get_export_status(self, export_id: str) -> Dict[str, Any]:
         """
-        Generate a summary of a document using AI
-        Uses the document processing edge function for summary generation
+        Get the status of an export operation
         
         Args:
-            document_id: ID of the document to summarize
-            user_id: ID of the user requesting summarization (for tracking)
+            export_id: The ID of the export operation
             
         Returns:
-            Dictionary with summary results including summary text
+            Dictionary containing export status
         """
-        # Call the process-documents edge function
-        payload = {
-            "document_id": document_id,
-            "action": "generate_summary"
+        # For now, return a simple status
+        # In a full implementation, this would track actual export jobs
+        return {
+            "export_id": export_id,
+            "status": "completed",
+            "created_at": datetime.now().isoformat(),
+            "message": "Export completed successfully"
         }
+    
+    def list_exports(self, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        List recent export operations
         
-        # Call the edge function
+        Args:
+            user_id: Optional user ID to filter exports
+            
+        Returns:
+            List of export operations
+        """
+        # For now, return empty list
+        # In a full implementation, this would query export logs
+        return []
+    
+    def delete_export(self, export_id: str) -> Dict[str, Any]:
+        """
+        Delete an export file
+        
+        Args:
+            export_id: The ID of the export to delete
+            
+        Returns:
+            Dictionary containing deletion result
+        """
         try:
-            # Use service role key for edge function access
-            headers = {
-                "apikey": SUPABASE_SERVICE_KEY,
-                "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
-                "Content-Type": "application/json"
+            # For now, just return success
+            # In a full implementation, this would delete actual files
+            return {
+                "success": True,
+                "message": f"Export {export_id} deleted successfully"
             }
             
-            response = requests.post(
-                f"{SUPABASE_URL}/functions/v1/process-documents",
-                headers=headers,
-                json=payload
-            )
-            
-            if response.status_code != 200:
-                raise ValueError(f"Summary generation failed: {response.text}")
-            
-            return response.json()
         except Exception as e:
-            raise ValueError(f"Error calling summary generation function: {str(e)}")
-            
+            return {
+                "success": False,
+                "error": f"Failed to delete export: {str(e)}"
+            }
 
-def create_export_database_tables():
-    """
-    Create database tables for tracking exports and downloads
-    This should be run as part of the database initialization
-    """
-    # Define SQL for creating the necessary tables
-    sql = """
-    -- Table for tracking document operations
-    CREATE TABLE IF NOT EXISTS document_operations (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        document_id UUID NOT NULL REFERENCES documents(id),
-        operation VARCHAR(50) NOT NULL,
-        status VARCHAR(20) NOT NULL,
-        metadata JSONB,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        created_by UUID REFERENCES users(id)
-    );
-
-    -- Table for tracking downloads
-    CREATE TABLE IF NOT EXISTS downloads (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        user_id UUID REFERENCES users(id),
-        file_id UUID NOT NULL,
-        file_type VARCHAR(50) NOT NULL,
-        file_name TEXT,
-        timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-    );
-
-    -- Table for tracking exports
-    CREATE TABLE IF NOT EXISTS export_logs (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        source_type VARCHAR(50) NOT NULL,
-        source_id UUID NOT NULL,
-        export_type VARCHAR(20) NOT NULL,
-        filename TEXT,
-        storage_path TEXT,
-        created_by UUID REFERENCES users(id),
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        status VARCHAR(20) NOT NULL,
-        metadata JSONB
-    );
-
-    -- Add indexes for common queries
-    CREATE INDEX IF NOT EXISTS idx_document_operations_document_id ON document_operations(document_id);
-    CREATE INDEX IF NOT EXISTS idx_downloads_user_id ON downloads(user_id);
-    CREATE INDEX IF NOT EXISTS idx_downloads_file_id ON downloads(file_id);
-    CREATE INDEX IF NOT EXISTS idx_export_logs_source ON export_logs(source_type, source_id);
-    """
-    
-    # Execute the SQL using our supabase client
-    supabase = get_supabase_client()
-    supabase.rpc('execute_sql', {'sql': sql}).execute()
-    
-    print("Created export and download tracking tables")
-
-
-def create_reports_database_tables():
-    """
-    Create database tables for financial reports and document management
-    This should be run as part of the database initialization
-    """
-    # Define SQL for creating the necessary tables
-    sql = """
-    -- Table for financial reports
-    CREATE TABLE IF NOT EXISTS financial_reports (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        title VARCHAR(255) NOT NULL,
-        report_type VARCHAR(50) NOT NULL,
-        period_start DATE,
-        period_end DATE,
-        storage_path TEXT,
-        file_url TEXT,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        created_by UUID REFERENCES users(id),
-        last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        metadata JSONB,
-        status VARCHAR(20) DEFAULT 'draft',
-        published BOOLEAN DEFAULT FALSE
-    );
-
-    -- Table for tracking document versions
-    CREATE TABLE IF NOT EXISTS document_versions (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        document_id UUID NOT NULL REFERENCES documents(id),
-        version_number INTEGER NOT NULL,
-        storage_path TEXT NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        created_by UUID REFERENCES users(id),
-        change_summary TEXT,
-        file_size INTEGER,
-        active BOOLEAN DEFAULT TRUE
-    );
-
-    -- Add indexes for common queries
-    CREATE INDEX IF NOT EXISTS idx_financial_reports_period ON financial_reports(period_start, period_end);
-    CREATE INDEX IF NOT EXISTS idx_document_versions_document_id ON document_versions(document_id);
-    
-    -- Add unique constraint for document versions
-    ALTER TABLE document_versions 
-    ADD CONSTRAINT unique_document_version 
-    UNIQUE (document_id, version_number);
-    """
-    
-    # Execute the SQL using our supabase client
-    supabase = get_supabase_client()
-    supabase.rpc('execute_sql', {'sql': sql}).execute()
-    
-    print("Created report and document version tables")
+# Create a global instance
+document_exporter = DocumentExporter()

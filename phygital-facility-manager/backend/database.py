@@ -45,122 +45,102 @@ Base = declarative_base()
 # Database Models
 class User(Base):
     __tablename__ = 'users'
-    
+
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     email = Column(String, unique=True, nullable=False)
     name = Column(String)
     full_name = Column(String)
-    phone = Column(String)
-    apartment_number = Column(String)
+    apartment = Column(String)  # Changed from apartment_number to apartment
     role = Column(String, default='resident')  # admin, staff, resident
     google_id = Column(String, unique=True)
-    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class Document(Base):
     __tablename__ = 'documents'
-    
+
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     title = Column(String, nullable=False)
     description = Column(Text)
     content = Column(Text)
     category = Column(String)
     file_url = Column(String)
-    file_path = Column(String)
-    file_size = Column(Integer)
-    mime_type = Column(String)
-    storage_path = Column(String)
-    uploaded_by = Column(String, ForeignKey('users.id'))
-    is_public = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Relationships
-    uploader = relationship("User", backref="uploaded_documents")
+    last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class Ticket(Base):
     __tablename__ = 'tickets'
-    
+
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     subject = Column(String, nullable=False)
-    description = Column(Text, nullable=False)
+    description = Column(Text)
     category = Column(String)
     priority = Column(String, default='medium')  # low, medium, high, urgent
     status = Column(String, default='open')  # open, in_progress, resolved, closed
+    apartment_unit = Column(String)  # Changed from apartment_number to apartment_unit
+    location_details = Column(String)
     created_by = Column(String, ForeignKey('users.id'))
     assigned_to = Column(String, ForeignKey('users.id'))
-    apartment_number = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    resolved_at = Column(DateTime)
-    
-    # Relationships
-    creator = relationship("User", foreign_keys=[created_by], backref="created_tickets")
-    assignee = relationship("User", foreign_keys=[assigned_to], backref="assigned_tickets")
 
 class Announcement(Base):
     __tablename__ = 'announcements'
-    
+
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     title = Column(String, nullable=False)
-    content = Column(Text, nullable=False)
-    category = Column(String)
+    content = Column(Text)
+    date = Column(DateTime)  # Changed from created_at to date
     priority = Column(String, default='normal')  # low, normal, high, urgent
-    is_published = Column(Boolean, default=False)
-    published_at = Column(DateTime)
-    expires_at = Column(DateTime)
     created_by = Column(String, ForeignKey('users.id'))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Relationships
-    creator = relationship("User", backref="announcements")
 
 class Event(Base):
     __tablename__ = 'events'
-    
+
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     title = Column(String, nullable=False)
     description = Column(Text)
-    event_date = Column(DateTime, nullable=False)
-    end_date = Column(DateTime)
+    date = Column(DateTime)  # Changed from event_date to date
+    time_start = Column(DateTime)
+    time_end = Column(DateTime)
     location = Column(String)
-    category = Column(String)
-    max_attendees = Column(Integer)
-    registration_required = Column(Boolean, default=False)
     created_by = Column(String, ForeignKey('users.id'))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Relationships
-    creator = relationship("User", backref="events")
 
 class AIQueryLog(Base):
     __tablename__ = 'ai_query_logs'
-    
+
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    query = Column(Text, nullable=False)
-    response_text = Column(Text)
-    context_type = Column(String)
-    context_sources = Column(JSON)
-    meta_data = Column(JSON)
     user_id = Column(String, ForeignKey('users.id'))
-    processing_time = Column(Integer)  # in milliseconds
+    query_text = Column(Text, nullable=False)  # Changed from query to query_text
+    query_embedding = Column(String)  # This is a vector type in PostgreSQL
+    response_text = Column(Text)
+    model_used = Column(String)
+    tokens_used = Column(Integer)
+    processing_time = Column('processing_time', String)  # Changed to match schema
+    similar_documents = Column(String)  # Array type in PostgreSQL
+    similarity_scores = Column(String)  # Array type in PostgreSQL
     created_at = Column(DateTime, default=datetime.utcnow)
-    
-    # Relationships
-    user = relationship("User", backref="ai_queries")
 
 class FAQ(Base):
     __tablename__ = 'faqs'
-    
+
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     question = Column(String, nullable=False)
     answer = Column(Text, nullable=False)
     category = Column(String)
     order_index = Column(Integer)
-    is_published = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class DocumentEmbedding(Base):
+    __tablename__ = 'document_embeddings'
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    document_id = Column(String, nullable=False)
+    content_hash = Column(String, nullable=False)
+    embedding = Column('embedding', String)  # This will be a vector type in PostgreSQL
+    chunk_index = Column(Integer)
+    chunk_text = Column(Text)
+    model_name = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -186,8 +166,9 @@ def init_db():
 def test_connection():
     """Test database connection"""
     try:
+        from sqlalchemy import text
         connection = engine.connect()
-        connection.execute("SELECT 1")
+        result = connection.execute(text("SELECT 1"))
         connection.close()
         print("Database connection successful")
         return True

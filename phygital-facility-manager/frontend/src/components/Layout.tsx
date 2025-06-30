@@ -22,10 +22,9 @@ import MenuIcon from '@mui/icons-material/Menu';
 import HomeIcon from '@mui/icons-material/Home';
 import ArticleIcon from '@mui/icons-material/Article';
 import ForumIcon from '@mui/icons-material/Forum';
-import HelpIcon from '@mui/icons-material/Help';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
-import SyncIcon from '@mui/icons-material/Sync';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import ClickUpIcon from './icons/ClickUpIcon';
 
 const Layout: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -41,17 +40,15 @@ const Layout: React.FC = () => {
       '/': 0,
       '/knowledge-base': 1,
       '/communication': 2,
-      '/help-desk': 3,
-      '/document-upload': 4,
-      '/openai-assistant': 5,
-      '/migration': 6,
+      '/clickup-tasks': 3,
+      '/openai-assistant': 4,
     };
     setValue(pathToIndex[location.pathname] || 0);
   }, [location.pathname]);
 
   const handleNavigation = (newValue: number) => {
     setValue(newValue);
-    const indexToPath = ['/', '/knowledge-base', '/communication', '/help-desk', '/document-upload', '/openai-assistant', '/migration'];
+    const indexToPath = ['/', '/knowledge-base', '/communication', '/financial-dashboard', '/clickup-tasks', '/openai-assistant'];
     navigate(indexToPath[newValue]);
   };
 
@@ -59,10 +56,9 @@ const Layout: React.FC = () => {
     { label: 'Home', icon: <HomeIcon />, path: '/' },
     { label: 'Knowledge Base', icon: <ArticleIcon />, path: '/knowledge-base' },
     { label: 'Communication', icon: <ForumIcon />, path: '/communication' },
-    { label: 'Help Desk', icon: <HelpIcon />, path: '/help-desk' },
-    { label: 'Document Upload', icon: <CloudUploadIcon />, path: '/document-upload' },
+    { label: 'Financial Dashboard', icon: <AccountBalanceIcon />, path: '/financial-dashboard' },
+    { label: 'ClickUp Tasks', icon: <ClickUpIcon size={24} />, path: '/clickup-tasks' },
     { label: 'AI Assistant', icon: <SmartToyIcon />, path: '/openai-assistant' },
-    { label: 'Migration', icon: <SyncIcon />, path: '/migration' },
   ];
 
   const toggleDrawer = () => {

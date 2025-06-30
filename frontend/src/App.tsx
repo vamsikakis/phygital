@@ -4,8 +4,6 @@ import { ThemeProvider, CssBaseline, Box, AppBar, Toolbar, Typography, Button } 
 import theme from './theme/theme';
 import ResponsiveLayout from './components/layout/ResponsiveLayout';
 import HomePage from './pages/HomePage';
-import DocumentsPage from './pages/DocumentsPage';
-import HelpDeskPage from './pages/HelpDeskPage';
 import FinancialDashboard from './pages/financial/FinancialDashboard';
 import ExpenseManagement from './pages/financial/ExpenseManagement';
 import BudgetManagement from './pages/financial/BudgetManagement';
@@ -22,8 +20,6 @@ function App() {
         <ResponsiveLayout>
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/documents" element={<DocumentsPage />} />
-            <Route path="/helpdesk" element={<HelpDeskPage />} />
             <Route path="/financial/dashboard" element={<FinancialDashboard />} />
             <Route path="/financial/expenses" element={<ExpenseManagement />} />
             <Route path="/financial/budget" element={<BudgetManagement />} />

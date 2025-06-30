@@ -10,14 +10,8 @@ const Navigation: React.FC = () => {
           Gopalan Atlantis
         </Typography>
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button color="inherit" component={RouterLink} to="/documents">
-            Documents
-          </Button>
           <Button color="inherit" component={RouterLink} to="/communications">
             Communications
-          </Button>
-          <Button color="inherit" component={RouterLink} to="/helpdesk">
-            Help Desk
           </Button>
         </Box>
       </Toolbar>

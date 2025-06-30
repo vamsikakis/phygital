@@ -7,10 +7,9 @@ import CssBaseline from '@mui/material/CssBaseline';
 import Home from './pages/Home';
 import KnowledgeBase from './pages/KnowledgeBase';
 import Communication from './pages/Communication';
-import HelpDesk from './pages/HelpDesk';
-import DocumentUpload from './pages/DocumentUpload';
+import FinancialDashboard from './pages/FinancialDashboard';
+import ClickUpTasksPage from './pages/ClickUpTasksPage';
 import OpenAIAssistantPage from './pages/OpenAIAssistantPage';
-import MigrationDashboard from './pages/MigrationDashboard';
 
 // Components
 import Layout from './components/Layout';
@@ -48,10 +47,9 @@ function App() {
             <Route index element={<Home />} />
             <Route path="knowledge-base" element={<KnowledgeBase />} />
             <Route path="communication" element={<Communication />} />
-            <Route path="/help-desk" element={<HelpDesk />} />
-            <Route path="/document-upload" element={<DocumentUpload />} />
-            <Route path="/openai-assistant" element={<OpenAIAssistantPage />} />
-            <Route path="/migration" element={<MigrationDashboard />} />
+            <Route path="financial-dashboard" element={<FinancialDashboard />} />
+            <Route path="clickup-tasks" element={<ClickUpTasksPage />} />
+            <Route path="openai-assistant" element={<OpenAIAssistantPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

@@ -425,51 +425,82 @@ def delete_document(document_id):
 
 @documents_bp.route('/<document_id>/download', methods=['GET'])
 def download_document(document_id):
-    """Get a download URL for a document"""
+    """Provide information about document download limitations"""
     try:
-        # Get current user for tracking
-        current_user = get_current_user()
-        user_id = current_user.id if current_user else None
-        
-        # Get download URL
-        download_url, document = document_exporter.download_original_document(document_id, user_id)
-        
+        from services.openai_assistant_service import openai_assistant_service
+
+        # Get file info from OpenAI (this is allowed)
+        files_list = openai_assistant_service.list_files()
+        document = None
+
+        for file_info in files_list:
+            if file_info.get('file_id') == document_id:
+                document = file_info
+                break
+
+        if not document:
+            return jsonify({'error': 'Document not found'}), 404
+
+        # Return information about the limitation
         return jsonify({
-            'download_url': download_url,
+            'error': 'Direct download not available',
+            'message': 'Due to OpenAI security policies, files uploaded to the AI assistant cannot be downloaded directly.',
             'document': {
-                'id': document['id'],
-                'title': document['title'],
-                'category': document['category'],
-                'file_url': document['file_url']
-            }
-        })
-        
+                'id': document_id,
+                'filename': document.get('filename', 'Unknown'),
+                'size': document.get('bytes', 0),
+                'created_at': document.get('created_at', '')
+            },
+            'alternatives': [
+                'Contact the facility management team for a copy of this document',
+                'Check if the document is available in the community shared drive',
+                'Request the document through the AI Assistant chat'
+            ]
+        }), 200
+
     except Exception as e:
-        current_app.logger.error(f"Error generating download URL for document {document_id}: {str(e)}")
+        current_app.logger.error(f"Error getting document info {document_id}: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @documents_bp.route('/<document_id>/pdf', methods=['GET'])
 def generate_pdf(document_id):
-    """Generate a PDF version of a document"""
+    """Provide information about PDF generation limitations"""
     try:
-        # Get current user for tracking
-        current_user = get_current_user()
-        user_id = current_user.id if current_user else None
-        
-        # Get template option
-        template = request.args.get('template', 'default')
-        
-        # Generate PDF
-        result = document_exporter.generate_pdf(
-            document_id=document_id,
-            template=template,
-            user_id=user_id
-        )
-        
-        return jsonify(result)
-        
+        from services.openai_assistant_service import openai_assistant_service
+
+        # Get file info from OpenAI
+        files_list = openai_assistant_service.list_files()
+        document = None
+
+        for file_info in files_list:
+            if file_info.get('file_id') == document_id:
+                document = file_info
+                break
+
+        if not document:
+            return jsonify({'error': 'Document not found'}), 404
+
+        filename = document.get('filename', 'Unknown')
+
+        # Return information about the limitation
+        return jsonify({
+            'error': 'PDF generation not available',
+            'message': 'Due to OpenAI security policies, files uploaded to the AI assistant cannot be accessed for PDF conversion.',
+            'document': {
+                'id': document_id,
+                'filename': filename,
+                'size': document.get('bytes', 0),
+                'is_pdf': filename.lower().endswith('.pdf')
+            },
+            'alternatives': [
+                'If this is already a PDF, contact facility management for a copy',
+                'Use the AI Assistant to get information from this document',
+                'Request a PDF version through the facility management team'
+            ]
+        }), 200
+
     except Exception as e:
-        current_app.logger.error(f"Error generating PDF for document {document_id}: {str(e)}")
+        current_app.logger.error(f"Error getting document info for PDF {document_id}: {str(e)}")
         return jsonify({'error': str(e)}), 500
         
 @documents_bp.route('/<document_id>/convert', methods=['GET'])
