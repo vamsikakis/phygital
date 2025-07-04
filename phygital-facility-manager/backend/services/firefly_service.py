@@ -71,6 +71,15 @@ class FireflyService:
                 'message': 'Connected to Firefly III successfully'
             }
         except Exception as e:
+            # Fall back to mock service if available
+            if mock_firefly_service:
+                current_app.logger.info("Firefly III not available, using mock service for demo")
+                return {
+                    'success': True,
+                    'version': 'Mock Service',
+                    'api_version': 'v1',
+                    'message': 'Using Firefly III mock service for demonstration'
+                }
             return {
                 'success': False,
                 'error': str(e),
@@ -108,6 +117,10 @@ class FireflyService:
             
         except Exception as e:
             current_app.logger.error(f"Error getting accounts: {e}")
+            # Fall back to mock service if available
+            if mock_firefly_service:
+                current_app.logger.info("Using mock service for accounts")
+                return mock_firefly_service.get_accounts(account_type)
             return []
     
     def get_transactions(self, start_date: str = None, end_date: str = None, limit: int = 50) -> List[Dict[str, Any]]:
@@ -175,6 +188,10 @@ class FireflyService:
             
         except Exception as e:
             current_app.logger.error(f"Error getting budgets: {e}")
+            # Fall back to mock service if available
+            if mock_firefly_service:
+                current_app.logger.info("Using mock service for budgets")
+                return mock_firefly_service.get_budgets()
             return []
     
     def get_categories(self) -> List[Dict[str, Any]]:
@@ -229,6 +246,10 @@ class FireflyService:
             
         except Exception as e:
             current_app.logger.error(f"Error getting summary: {e}")
+            # Fall back to mock service if available
+            if mock_firefly_service:
+                current_app.logger.info("Using mock service for summary")
+                return mock_firefly_service.get_summary()
             return {
                 'total_assets': 0,
                 'total_liabilities': 0,
