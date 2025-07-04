@@ -19,9 +19,18 @@ app = Flask(__name__)
 app.config.from_object(config[os.getenv('FLASK_ENV', 'default')])
 CORS(app)
 
+# --- MOVE THIS BLOCK UP ---
+# Register Assistant routes FIRST, so they are available when the app starts and receives requests
+from routes.assistant_routes import assistant_bp
+app.register_blueprint(assistant_bp, url_prefix='/api/assistant')
+app.logger.info("Registered Assistant routes")
+# --- END MOVE ---
+
 # Initialize OpenAI Assistant on startup
 def initialize_assistant():
     try:
+        # This call will now correctly use the service, and if the frontend
+        # also calls /api/assistant/init, that route will be available.
         result = openai_assistant_service.initialize()
         app.logger.info(f"OpenAI Assistant initialized: {result}")
     except Exception as e:
@@ -405,11 +414,6 @@ try:
     app.logger.info("Registered Firefly III routes")
 except ImportError:
     app.logger.warning("Firefly III routes not found")
-
-# Register Assistant routes (move this just before the catch-all route)
-from routes.assistant_routes import assistant_bp
-app.register_blueprint(assistant_bp, url_prefix='/api/assistant')
-app.logger.info("Registered Assistant routes")
 
 # Serve React frontend (catch-all route, must be last)
 @app.route('/')
