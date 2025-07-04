@@ -1,0 +1,110 @@
+# Docker Compose for Phygital Facility Manager
+# For local development and testing
+
+version: '3.8'
+
+services:
+  # Backend API Service
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=${DATABASE_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CLICKUP_API_TOKEN=${CLICKUP_API_TOKEN}
+      - CLICKUP_TEAM_ID=${CLICKUP_TEAM_ID}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - SECRET_KEY=${SECRET_KEY}
+      - FIREFLY_BASE_URL=http://firefly-app:8080
+      - FIREFLY_API_TOKEN=${FIREFLY_API_TOKEN}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+    volumes:
+      - backend_storage:/app/storage
+    depends_on:
+      - firefly-app
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # Frontend Service
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_URL=http://localhost:5000
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # Firefly III Database
+  firefly-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: firefly
+      POSTGRES_USER: firefly
+      POSTGRES_PASSWORD: ${FIREFLY_DB_PASSWORD:-secure_firefly_password}
+    volumes:
+      - firefly_db_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U firefly"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Firefly III Application
+  firefly-app:
+    image: fireflyiii/core:latest
+    depends_on:
+      firefly-db:
+        condition: service_healthy
+    environment:
+      APP_KEY: ${FIREFLY_APP_KEY:-SomeRandomStringOf32CharsExactly}
+      DB_CONNECTION: pgsql
+      DB_HOST: firefly-db
+      DB_PORT: 5432
+      DB_DATABASE: firefly
+      DB_USERNAME: firefly
+      DB_PASSWORD: ${FIREFLY_DB_PASSWORD:-secure_firefly_password}
+      APP_URL: http://localhost:8080
+      TRUSTED_PROXIES: "**"
+      APP_ENV: local
+      APP_DEBUG: true
+      LOG_CHANNEL: stdout
+    volumes:
+      - firefly_upload:/var/www/html/storage/upload
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  backend_storage:
+    driver: local
+  firefly_db_data:
+    driver: local
+  firefly_upload:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
