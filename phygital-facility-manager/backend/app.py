@@ -423,10 +423,17 @@ def serve_frontend(path=''):
 
     # If path is empty or doesn't exist, serve index.html
     if path == '' or not os.path.exists(os.path.join(frontend_dist, path)):
-        return send_file(os.path.join(frontend_dist, 'index.html'))
+        # If index.html does not exist, return a simple message
+        index_path = os.path.join(frontend_dist, 'index.html')
+        if os.path.exists(index_path):
+            return send_file(index_path)
+        else:
+            return 'Frontend not built. Please deploy frontend separately.', 404
 
     # Serve the requested file
     return send_from_directory(frontend_dist, path)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    import os
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
