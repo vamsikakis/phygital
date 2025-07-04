@@ -40,7 +40,7 @@ export interface FileResponse {
 }
 
 class OpenAIAssistantService {
-  private API_BASE = `${import.meta.env.VITE_REACT_APP_API_URL || ''}/api/assistant`;
+  private API_BASE = `${import.meta.env.VITE_API_URL || 'https://phygital-s839.onrender.com'}/api/assistant`;
   private assistantId: string | null = null;
   private vectorStoreId: string | null = null;
   private _isInitialized = false;

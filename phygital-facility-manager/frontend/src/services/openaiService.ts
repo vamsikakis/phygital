@@ -34,7 +34,7 @@ interface QueryHistoryResponse {
 }
 
 class OpenAIService {
-  private readonly API_BASE = `${import.meta.env.VITE_REACT_APP_API_URL || ''}/api/ai_query`;
+  private readonly API_BASE = `${import.meta.env.VITE_API_URL || 'https://phygital-s839.onrender.com'}/api/ai_query`;
 
   /**
    * Send a query to the AI assistant

@@ -48,6 +48,22 @@ akc = ApartmentKnowledgeBase(client)
 oce = OwnersCommunication(client)
 hdc = HelpDesk(client)
 
+@app.route('/', methods=['GET'])
+def root():
+    """Root endpoint"""
+    return jsonify({
+        "message": "Phygital Facility Manager API",
+        "status": "running",
+        "version": "1.0.0",
+        "endpoints": {
+            "health": "/health",
+            "assistant": "/api/assistant/*",
+            "documents": "/api/documents/*",
+            "clickup": "/api/clickup/*",
+            "firefly": "/api/firefly/*"
+        }
+    }), 200
+
 @app.route('/health', methods=['GET'])
 def health_check():
     return jsonify({"status": "healthy"}), 200
