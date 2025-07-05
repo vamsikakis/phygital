@@ -37,6 +37,9 @@ import {
   Assignment as TaskIcon
 } from '@mui/icons-material';
 
+// API Configuration
+const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-s839.onrender.com';
+
 interface Task {
   id: string;
   name: string;
@@ -88,7 +91,7 @@ const ClickUpTaskManager: React.FC = () => {
 
   const loadConfig = async () => {
     try {
-      const response = await fetch('/api/clickup/config');
+      const response = await fetch(`${API_BASE}/api/clickup/config`);
       const data = await response.json();
       if (data.success) {
         setConfig(data.config);
@@ -102,9 +105,9 @@ const ClickUpTaskManager: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/clickup/tasks');
+      const response = await fetch(`${API_BASE}/api/clickup/tasks`);
       const data = await response.json();
-      
+
       if (data.success) {
         setTasks(data.tasks);
       } else {
@@ -119,7 +122,8 @@ const ClickUpTaskManager: React.FC = () => {
 
   const loadTeamMembers = async () => {
     try {
-      const response = await fetch('/api/clickup/team/members');
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-s839.onrender.com';
+      const response = await fetch(`${API_BASE}/api/clickup/team/members`);
       const data = await response.json();
 
       if (data.success) {
@@ -151,7 +155,8 @@ const ClickUpTaskManager: React.FC = () => {
         assignees: formData.assignees
       };
 
-      const response = await fetch('/api/clickup/tasks', {
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-s839.onrender.com';
+      const response = await fetch(`${API_BASE}/api/clickup/tasks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -191,7 +196,8 @@ const ClickUpTaskManager: React.FC = () => {
         tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
       };
 
-      const response = await fetch(`/api/clickup/tasks/${editingTask.id}`, {
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-s839.onrender.com';
+      const response = await fetch(`${API_BASE}/api/clickup/tasks/${editingTask.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -260,7 +266,8 @@ const ClickUpTaskManager: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/clickup/facility/maintenance-request', {
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-s839.onrender.com';
+      const response = await fetch(`${API_BASE}/api/clickup/facility/maintenance-request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -334,9 +341,10 @@ const ClickUpTaskManager: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/clickup/test');
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-s839.onrender.com';
+      const response = await fetch(`${API_BASE}/api/clickup/test`);
       const data = await response.json();
-      
+
       if (data.success) {
         setSuccess(`ClickUp connection successful! Found ${data.teams_count} teams.`);
       } else {
