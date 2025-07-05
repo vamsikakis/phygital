@@ -120,7 +120,12 @@ class FireflyService:
             # Fall back to mock service if available
             if mock_firefly_service:
                 current_app.logger.info("Using mock service for accounts")
-                return mock_firefly_service.get_accounts(account_type)
+                # Temporarily enable mock service for fallback
+                original_enabled = mock_firefly_service.enabled
+                mock_firefly_service.enabled = True
+                result = mock_firefly_service.get_accounts(account_type)
+                mock_firefly_service.enabled = original_enabled
+                return result
             return []
     
     def get_transactions(self, start_date: str = None, end_date: str = None, limit: int = 50) -> List[Dict[str, Any]]:
@@ -191,7 +196,12 @@ class FireflyService:
             # Fall back to mock service if available
             if mock_firefly_service:
                 current_app.logger.info("Using mock service for budgets")
-                return mock_firefly_service.get_budgets()
+                # Temporarily enable mock service for fallback
+                original_enabled = mock_firefly_service.enabled
+                mock_firefly_service.enabled = True
+                result = mock_firefly_service.get_budgets()
+                mock_firefly_service.enabled = original_enabled
+                return result
             return []
     
     def get_categories(self) -> List[Dict[str, Any]]:
@@ -249,7 +259,12 @@ class FireflyService:
             # Fall back to mock service if available
             if mock_firefly_service:
                 current_app.logger.info("Using mock service for summary")
-                return mock_firefly_service.get_summary()
+                # Temporarily enable mock service for fallback
+                original_enabled = mock_firefly_service.enabled
+                mock_firefly_service.enabled = True
+                result = mock_firefly_service.get_summary()
+                mock_firefly_service.enabled = original_enabled
+                return result
             return {
                 'total_assets': 0,
                 'total_liabilities': 0,
