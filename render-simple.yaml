@@ -1,46 +1,4 @@
 services:
-  # Firefly III Service
-  - type: web
-    name: firefly-iii
-    env: docker
-    dockerImage: fireflyiii/core:latest
-    region: oregon
-    plan: starter
-    healthCheckPath: /health
-    envVars:
-      - key: APP_KEY
-        generateValue: true
-      - key: APP_URL
-        value: https://firefly-iii.onrender.com
-      - key: TRUSTED_PROXIES
-        value: "**"
-      - key: DB_CONNECTION
-        value: pgsql
-      - key: DB_HOST
-        fromDatabase:
-          name: firefly-postgres
-          property: host
-      - key: DB_PORT
-        fromDatabase:
-          name: firefly-postgres
-          property: port
-      - key: DB_DATABASE
-        fromDatabase:
-          name: firefly-postgres
-          property: database
-      - key: DB_USERNAME
-        fromDatabase:
-          name: firefly-postgres
-          property: user
-      - key: DB_PASSWORD
-        fromDatabase:
-          name: firefly-postgres
-          property: password
-      - key: APP_ENV
-        value: production
-      - key: APP_DEBUG
-        value: "false"
-
   # Backend API Service
   - type: web
     name: phygital-backend
@@ -58,10 +16,7 @@ services:
       - key: DATABASE_URL
         value: postgresql://neondb_owner:npg_RnWCiGa64cZz@ep-twilight-salad-a8s70q3n.eastus2.azure.neon.tech/gopalan_atlantis?sslmode=require
       - key: FIREFLY_BASE_URL
-        fromService:
-          type: web
-          name: firefly-iii
-          property: host
+        value: https://firefly-iii.onrender.com
       - key: FIREFLY_API_TOKEN
         sync: false
       - key: OPENAI_API_URL
@@ -90,8 +45,3 @@ services:
         sync: false
       - key: OCR_SPACE_API_KEY
         sync: false
-
-databases:
-  - name: firefly-postgres
-    databaseName: firefly_iii
-    user: firefly_user
