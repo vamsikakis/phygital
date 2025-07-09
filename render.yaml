@@ -1,4 +1,56 @@
 services:
+  # Firefly III Service
+  - type: web
+    name: firefly-iii
+    env: docker
+    dockerImage: fireflyiii/core:latest
+    plan: starter
+    region: oregon
+    branch: main
+    healthCheckPath: /health
+    envVars:
+      # Firefly III Core Configuration
+      - key: APP_KEY
+        generateValue: true
+      - key: APP_URL
+        value: https://firefly-iii.onrender.com
+      - key: TRUSTED_PROXIES
+        value: "**"
+
+      # Database Configuration
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase:
+          name: firefly-postgres
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: firefly-postgres
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: firefly-postgres
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: firefly-postgres
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: firefly-postgres
+          property: password
+
+      # Security
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: LOG_CHANNEL
+        value: stack
+      - key: LOG_LEVEL
+        value: info
+
   # Backend API Service
   - type: web
     name: phygital-backend
@@ -84,13 +136,14 @@ services:
       - key: ALLOWED_EXTENSIONS
         value: "pdf,jpg,jpeg,png,doc,docx,txt,csv,xlsx"
       
-      # Firefly III Configuration (Mock for cloud deployment)
-      - key: ENABLE_MOCK_FIREFLY
-        value: "true"
+      # Firefly III Configuration (Real service)
       - key: FIREFLY_BASE_URL
-        value: "http://localhost:8080"
+        fromService:
+          type: web
+          name: firefly-iii
+          property: host
       - key: FIREFLY_API_TOKEN
-        value: "mock-token"
+        sync: false  # Set manually after creating API token in Firefly III
       
       # Security Configuration
       - key: SESSION_COOKIE_SECURE
@@ -131,3 +184,16 @@ services:
       - path: /*
         name: Referrer-Policy
         value: strict-origin-when-cross-origin
+
+databases:
+  # Firefly III Database
+  - name: firefly-postgres
+    databaseName: firefly_iii
+    user: firefly_user
+    plan: starter
+
+  # Main Application Database (using existing Neon)
+  - name: neon-postgres
+    databaseName: gopalan_atlantis
+    user: neondb_owner
+    plan: starter

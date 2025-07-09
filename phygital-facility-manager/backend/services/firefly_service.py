@@ -71,19 +71,11 @@ class FireflyService:
                 'message': 'Connected to Firefly III successfully'
             }
         except Exception as e:
-            # Fall back to mock service if available
-            if mock_firefly_service:
-                current_app.logger.info("Firefly III not available, using mock service for demo")
-                return {
-                    'success': True,
-                    'version': 'Mock Service',
-                    'api_version': 'v1',
-                    'message': 'Using Firefly III mock service for demonstration'
-                }
+            current_app.logger.error(f"Failed to connect to Firefly III: {e}")
             return {
                 'success': False,
                 'error': str(e),
-                'message': 'Failed to connect to Firefly III'
+                'message': 'Failed to connect to Firefly III. Please check your configuration.'
             }
     
     def get_accounts(self, account_type: str = None) -> List[Dict[str, Any]]:
