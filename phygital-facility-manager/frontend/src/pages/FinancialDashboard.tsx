@@ -84,21 +84,28 @@ const FinancialDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tabValue, setTabValue] = useState(0);
-  const [fireflyConnected, setFireflyConnected] = useState(false);
+  const [fireflyConnected, setFireflyConnected] = useState<boolean | null>(null); // null = checking, false = failed, true = connected
 
   useEffect(() => {
     testFireflyConnection();
-    loadDashboardData();
   }, []);
+
+  useEffect(() => {
+    if (fireflyConnected === true) {
+      loadDashboardData();
+    }
+  }, [fireflyConnected]);
 
   const testFireflyConnection = async () => {
     try {
       const response = await fetch('/api/firefly/test');
       const data = await response.json();
       setFireflyConnected(data.success);
-      
+
       if (!data.success) {
         setError(`Firefly III connection failed: ${data.error || 'Unknown error'}`);
+      } else {
+        setError(null); // Clear any previous errors
       }
     } catch (error) {
       setFireflyConnected(false);
@@ -163,7 +170,25 @@ const FinancialDashboard: React.FC = () => {
     setTabValue(newValue);
   };
 
-  if (!fireflyConnected) {
+  // Show loading while checking connection
+  if (fireflyConnected === null) {
+    return (
+      <Box>
+        <Typography variant="h5" component="h1" gutterBottom>
+          Financial Dashboard
+        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <CircularProgress />
+          <Typography variant="body1" sx={{ ml: 2 }}>
+            Checking Firefly III connection...
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
+
+  // Show setup instructions if connection failed
+  if (fireflyConnected === false) {
     return (
       <Box>
         <Typography variant="h5" component="h1" gutterBottom>
