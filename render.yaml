@@ -1,0 +1,133 @@
+services:
+  # Backend API Service
+  - type: web
+    name: phygital-backend
+    env: docker
+    dockerfilePath: ./phygital-facility-manager/backend/Dockerfile
+    dockerContext: ./phygital-facility-manager/backend
+    plan: starter
+    region: oregon
+    branch: main
+    healthCheckPath: /health
+    envVars:
+      # Flask Configuration
+      - key: FLASK_APP
+        value: app.py
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_DEBUG
+        value: "0"
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      
+      # Database Configuration (Neon PostgreSQL)
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:npg_RnWCiGa64cZz@ep-twilight-salad-a8s70q3n.eastus2.azure.neon.tech/gopalan_atlantis?sslmode=require
+      
+      # Authentication
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_EXPIRATION
+        value: "86400"
+      - key: SECRET_KEY
+        generateValue: true
+      
+      # CORS Configuration
+      - key: CORS_ORIGINS
+        value: "https://phygital-frontend.onrender.com,http://localhost:3000"
+      
+      # OpenAI Configuration (set manually)
+      - key: OPENAI_API_URL
+        value: "https://api.openai.com/v1"
+      - key: OPENAI_ORG_ID
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_ASSISTANT_ID
+        sync: false
+      - key: OPENAI_MODEL
+        value: "assistants=v2"
+      - key: OPENAI_VECTOR_STORE_ID
+        sync: false
+      
+      # OCR Space Configuration (set manually)
+      - key: OCR_SPACE_API_KEY
+        sync: false
+      - key: OCR_SPACE_API_URL
+        value: "https://api.ocr.space/parse/image"
+      
+      # ClickUp API Configuration (set manually)
+      - key: CLICKUP_CLIENT_ID
+        sync: false
+      - key: CLICKUP_CLIENT_SECRET
+        sync: false
+      - key: CLICKUP_REDIRECT_URI
+        value: "https://phygital-backend.onrender.com/api/clickup/callback"
+      - key: CLICKUP_API_TOKEN
+        sync: false
+      - key: CLICKUP_TEAM_ID
+        sync: false
+      - key: CLICKUP_SPACE_ID
+        sync: false
+      - key: CLICKUP_LIST_ID
+        sync: false
+      - key: CLICKUP_API_URL
+        value: "https://api.clickup.com/api/v2"
+      - key: CLICKUP_FOLDER_ID
+        sync: false
+      
+      # File Upload Configuration
+      - key: UPLOAD_FOLDER
+        value: "uploads"
+      - key: MAX_CONTENT_LENGTH
+        value: "16777216"
+      - key: ALLOWED_EXTENSIONS
+        value: "pdf,jpg,jpeg,png,doc,docx,txt,csv,xlsx"
+      
+      # Firefly III Configuration (Mock for cloud deployment)
+      - key: ENABLE_MOCK_FIREFLY
+        value: "true"
+      - key: FIREFLY_BASE_URL
+        value: "http://localhost:8080"
+      - key: FIREFLY_API_TOKEN
+        value: "mock-token"
+      
+      # Security Configuration
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      - key: SESSION_COOKIE_HTTPONLY
+        value: "true"
+      - key: SESSION_COOKIE_SAMESITE
+        value: "Lax"
+      - key: WTF_CSRF_ENABLED
+        value: "true"
+      
+      # Logging Configuration
+      - key: LOG_LEVEL
+        value: "INFO"
+
+  # Frontend Static Site
+  - type: static
+    name: phygital-frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    pullRequestPreviewsEnabled: false
+    buildFilter:
+      paths:
+        - phygital-facility-manager/frontend/**
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: phygital-backend
+          property: host
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
