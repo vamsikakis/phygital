@@ -182,9 +182,8 @@ def create_document():
 
         # Clean up temp file
         os.remove(temp_path)
-            
+
             # Create document metadata with OCR and vector database information
-            import uuid
             document_id = str(uuid.uuid4())
             vector_doc_id = f"doc_{document_id}_{result.get('file_id', '')}"
 
