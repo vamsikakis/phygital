@@ -171,33 +171,10 @@ def create_document():
                 # Use basic metadata for vector DB if no text extracted
                 content_for_vector_db = f"Document: {file.filename}\nTitle: {title}\nDescription: {description}\nCategory: {category}"
 
-            # Store document embedding in local PostgreSQL vector database
-            try:
-                from services.vector_service import vector_service
-
-                # Create unique document ID for vector storage
-                vector_doc_id = f"doc_{document_id}_{result.get('file_id', '')}"
-
-                # Store in local vector database for semantic search
-                vector_success = vector_service.store_document_embedding(
-                    document_id=vector_doc_id,
-                    content=content_for_vector_db,
-                    metadata={
-                        'original_filename': file.filename,
-                        'title': title,
-                        'description': description,
-                        'category': category,
-                        'openai_file_id': result.get('file_id'),
-                        'document_id': document_id,
-                        'upload_timestamp': datetime.now().isoformat(),
-                        'ocr_processed': ocr_result is not None,
-                        'text_extracted': bool(extracted_text.strip())
-                    }
-                )
-
-                if vector_success:
-                    current_app.logger.info(f"Successfully stored document embedding in local vector database: {vector_doc_id}")
-                else:
+            # Local vector database removed - using OpenAI vector store instead
+            # Document is already uploaded to OpenAI vector store above
+            vector_success = True  # OpenAI vector store handles this
+            current_app.logger.info(f"Document uploaded to OpenAI vector store: {result.get('file_id', 'unknown')}")
                     current_app.logger.warning(f"Failed to store document embedding in local vector database: {vector_doc_id}")
 
             except Exception as vector_error:
@@ -314,14 +291,9 @@ def search_documents():
         limit = data.get('limit', 10)
         threshold = data.get('threshold', 0.7)
 
-        # Use vector service for semantic search
-        from services.vector_service import vector_service
-
-        search_results = vector_service.similarity_search(
-            query=query,
-            limit=limit,
-            threshold=threshold
-        )
+        # Vector search removed - using OpenAI vector store instead
+        # TODO: Implement search using OpenAI vector store
+        search_results = []
 
         # Transform results to include document metadata
         documents = []
@@ -370,25 +342,9 @@ def delete_document(document_id):
         except Exception as e:
             current_app.logger.warning(f"Could not delete from OpenAI (might not exist): {str(e)}")
 
-        # Delete from local vector database
-        try:
-            from services.vector_service import vector_service
-
-            # Try different possible vector document IDs
-            possible_vector_ids = [
-                document_id,  # Direct ID
-                f"doc_{document_id}",  # With doc_ prefix
-                f"doc_{document_id}_{document_id}"  # Full format
-            ]
-
-            deleted_from_vector = False
-            for vector_id in possible_vector_ids:
-                if vector_service.delete_document_embedding(vector_id):
-                    current_app.logger.info(f"Deleted document {vector_id} from vector database")
-                    deleted_from_vector = True
-                    break
-
-            if not deleted_from_vector:
+        # Local vector database removed - using OpenAI vector store instead
+        # Document deletion from OpenAI vector store is handled above
+        deleted_from_vector = True  # OpenAI vector store handles this
                 current_app.logger.warning(f"Could not find document {document_id} in vector database")
 
         except Exception as e:

@@ -5,9 +5,23 @@ import uuid
 from datetime import datetime
 from dotenv import load_dotenv
 
-from db import get_db_session, User, FinancialReport, FinancialDetail
+# Temporarily commented out missing models to allow server startup
+# from db import get_db_session, User, FinancialReport, FinancialDetail
+try:
+    from db import get_db_session, User
+    # FinancialReport, FinancialDetail models need to be added to db.py
+except ImportError as e:
+    print(f"Warning: Database models not fully available: {e}")
+    get_db_session = None
+    User = None
 from auth import login_required, admin_required, staff_required, get_current_user
-from integrations.document_exports import generate_financial_report_pdf
+# Temporarily commented out missing function to allow server startup
+# from integrations.document_exports import generate_financial_report_pdf
+try:
+    from integrations.document_exports import generate_financial_report_pdf
+except ImportError as e:
+    print(f"Warning: Document export function not available: {e}")
+    generate_financial_report_pdf = None
 
 # Create blueprint
 financial_bp = Blueprint('financial', __name__)

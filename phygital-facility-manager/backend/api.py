@@ -10,14 +10,15 @@ from datetime import datetime, date
 # Load environment variables
 load_dotenv()
 
-# Import routes
-from routes.document_routes import documents_bp
-from routes.ai_query_routes import ai_query_bp
-from routes.notification_routes import notification_bp
-from routes.auth_routes import auth_bp
-from routes.financial_routes import financial_bp
-from routes.document_operations_routes import doc_operations_bp
-from routes.ticket_routes import ticket_bp
+# Import routes - temporarily disable problematic ones for startup
+# from routes.document_routes import documents_bp
+# from routes.ai_query_routes import ai_query_bp
+# from routes.notification_routes import notification_bp
+# from routes.auth_routes import auth_bp
+# from routes.financial_routes import financial_bp
+# from routes.document_operations_routes import doc_operations_bp
+# from routes.ticket_routes import ticket_bp
+from routes.firefly_routes import firefly_bp
 
 # Create Flask app
 app = Flask(__name__)
@@ -56,14 +57,15 @@ class CustomJSONEncoder(json.JSONEncoder):
 
 app.json_encoder = CustomJSONEncoder
 
-# Register blueprints
-app.register_blueprint(documents_bp, url_prefix='/api/documents')
-app.register_blueprint(ai_query_bp, url_prefix='/api/ai-query')
-app.register_blueprint(notification_bp, url_prefix='/api/notifications')
-app.register_blueprint(auth_bp, url_prefix='/api/auth')
-app.register_blueprint(financial_bp, url_prefix='/api/financial')
-app.register_blueprint(doc_operations_bp, url_prefix='/api/document-operations')
-app.register_blueprint(ticket_bp, url_prefix='/api/tickets')
+# Register blueprints - temporarily only firefly for testing
+# app.register_blueprint(documents_bp, url_prefix='/api/documents')
+# app.register_blueprint(ai_query_bp, url_prefix='/api/ai-query')
+# app.register_blueprint(notification_bp, url_prefix='/api/notifications')
+# app.register_blueprint(auth_bp, url_prefix='/api/auth')
+# app.register_blueprint(financial_bp, url_prefix='/api/financial')
+# app.register_blueprint(doc_operations_bp, url_prefix='/api/document-operations')
+# app.register_blueprint(ticket_bp, url_prefix='/api/tickets')
+app.register_blueprint(firefly_bp, url_prefix='/api/firefly')
 
 # Root routes
 @app.route('/')

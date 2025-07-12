@@ -23,7 +23,8 @@ class FireflyService:
         self.api_base = f"{self.base_url}/api/v1"
         
         if not self.api_token:
-            current_app.logger.warning("Firefly III API token not configured")
+            # Use print instead of current_app.logger during initialization
+            print("Warning: Firefly III API token not configured")
     
     def _get_headers(self) -> Dict[str, str]:
         """Get headers for Firefly III API requests"""

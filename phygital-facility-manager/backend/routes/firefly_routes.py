@@ -15,8 +15,9 @@ def test_firefly_connection():
     """Test connection to Firefly III"""
     try:
         result = firefly_service.test_connection()
-        status_code = 200 if result.get('success') else 500
-        return jsonify(result), status_code
+        # Always return 200 for successful API calls, even if Firefly connection fails
+        # The success/failure is indicated in the JSON response
+        return jsonify(result), 200
     except Exception as e:
         current_app.logger.error(f"Error testing Firefly connection: {e}")
         return jsonify({

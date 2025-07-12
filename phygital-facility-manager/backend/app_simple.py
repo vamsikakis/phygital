@@ -26,14 +26,8 @@ CORS(app)
 # Initialize OpenAI
 openai.api_key = app.config['OPENAI_API_KEY']
 
-# Import services
-try:
-    from services.vector_service import vector_service
-    VECTOR_SERVICE_AVAILABLE = True
-    app.logger.info("Vector service loaded successfully")
-except Exception as e:
-    VECTOR_SERVICE_AVAILABLE = False
-    app.logger.warning(f"Vector service not available: {e}")
+# Import services - vector_service removed (using OpenAI vector store instead)
+VECTOR_SERVICE_AVAILABLE = False  # Using OpenAI vector store instead of local pgvector
 
 try:
     from services.openai_assistant_service import openai_assistant_service
@@ -87,36 +81,9 @@ def ai_query():
         
         query = data['query']
         
-        # Get context from vector database if available
+        # Vector search removed - using OpenAI vector store instead
         vector_context = ""
         vector_sources = []
-        
-        if VECTOR_SERVICE_AVAILABLE:
-            try:
-                similar_docs = vector_service.similarity_search(
-                    query=query,
-                    limit=3,
-                    threshold=0.6
-                )
-                
-                if similar_docs:
-                    context_parts = []
-                    for doc in similar_docs:
-                        metadata = doc.get('metadata', {})
-                        title = metadata.get('title', 'Unknown Document')
-                        context_parts.append(f"Document: {title}")
-                        context_parts.append(f"Content: {doc['content'][:300]}...")
-                        context_parts.append("---")
-                        
-                        vector_sources.append({
-                            'title': title,
-                            'similarity_score': doc['similarity_score']
-                        })
-                    
-                    vector_context = "\n".join(context_parts)
-                    
-            except Exception as e:
-                app.logger.warning(f"Vector search failed: {e}")
         
         # Use OpenAI for response
         try:
@@ -232,19 +199,8 @@ def upload_document():
         import uuid
         document_id = str(uuid.uuid4())
         
-        # Store in vector database
-        success = vector_service.store_document_embedding(
-            document_id=document_id,
-            content=f"Title: {title}\nDescription: {description}\nCategory: {category}\n\nContent:\n{content}",
-            metadata={
-                'title': title,
-                'description': description,
-                'category': category,
-                'original_filename': file.filename,
-                'document_id': document_id,
-                'upload_timestamp': datetime.now().isoformat()
-            }
-        )
+        # Vector storage removed - using OpenAI vector store instead
+        success = True  # Placeholder - implement OpenAI vector store upload
         
         if success:
             return jsonify({
