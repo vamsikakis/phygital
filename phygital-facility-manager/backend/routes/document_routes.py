@@ -177,11 +177,11 @@ def create_document():
             current_app.logger.info(f"Document uploaded to OpenAI vector store: {result.get('file_id', 'unknown')}")
 
         except Exception as vector_error:
-                current_app.logger.error(f"Error storing document in vector database: {str(vector_error)}")
-                # Don't fail the upload if vector storage fails
-            
-            # Clean up temp file
-            os.remove(temp_path)
+            current_app.logger.error(f"Error storing document in vector database: {str(vector_error)}")
+            # Don't fail the upload if vector storage fails
+
+        # Clean up temp file
+        os.remove(temp_path)
             
             # Create document metadata with OCR and vector database information
             import uuid
