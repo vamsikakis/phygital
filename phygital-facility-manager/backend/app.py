@@ -457,4 +457,5 @@ def serve_frontend(path=''):
 if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 5000))
+    # Force deployment to pick up new environment variables
     app.run(host='0.0.0.0', port=port)
