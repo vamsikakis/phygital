@@ -175,9 +175,8 @@ def create_document():
             # Document is already uploaded to OpenAI vector store above
             vector_success = True  # OpenAI vector store handles this
             current_app.logger.info(f"Document uploaded to OpenAI vector store: {result.get('file_id', 'unknown')}")
-                    current_app.logger.warning(f"Failed to store document embedding in local vector database: {vector_doc_id}")
 
-            except Exception as vector_error:
+        except Exception as vector_error:
                 current_app.logger.error(f"Error storing document in vector database: {str(vector_error)}")
                 # Don't fail the upload if vector storage fails
             
