@@ -183,47 +183,47 @@ def create_document():
         # Clean up temp file
         os.remove(temp_path)
 
-            # Create document metadata with OCR and vector database information
-            document_id = str(uuid.uuid4())
-            vector_doc_id = f"doc_{document_id}_{result.get('file_id', '')}"
+        # Create document metadata with OCR and vector database information
+        document_id = str(uuid.uuid4())
+        vector_doc_id = f"doc_{document_id}_{result.get('file_id', '')}"
 
-            document_metadata = {
-                'id': document_id,
-                'title': title,
-                'description': description,
-                'category': category,
-                'filename': file.filename,
-                'file_id': result.get('file_id'),
-                'vector_doc_id': vector_doc_id,
-                'created_at': datetime.now().isoformat(),
-                'status': 'uploaded',
-                'ocr_processed': ocr_result is not None,
-                'text_extracted': bool(extracted_text.strip()),
-                'vector_stored': vector_success if 'vector_success' in locals() else False,
-                'searchable': True,  # Document is now searchable via vector similarity
-                'ocr_metadata': {
-                    'success': ocr_result.get('success', False) if ocr_result else False,
-                    'confidence': ocr_result.get('confidence', 0) if ocr_result else 0,
-                    'word_count': ocr_result.get('word_count', 0) if ocr_result else 0,
-                    'character_count': ocr_result.get('character_count', 0) if ocr_result else 0,
-                    'pages_processed': ocr_result.get('pages_processed', 0) if ocr_result else 0,
-                    'error': ocr_result.get('error') if ocr_result and not ocr_result.get('success') else None
-                },
-                'vector_metadata': {
-                    'stored_in_vector_db': vector_success if 'vector_success' in locals() else False,
-                    'vector_document_id': vector_doc_id,
-                    'content_length': len(content_for_vector_db),
-                    'embedding_model': 'text-embedding-3-small'
-                }
+        document_metadata = {
+            'id': document_id,
+            'title': title,
+            'description': description,
+            'category': category,
+            'filename': file.filename,
+            'file_id': result.get('file_id'),
+            'vector_doc_id': vector_doc_id,
+            'created_at': datetime.now().isoformat(),
+            'status': 'uploaded',
+            'ocr_processed': ocr_result is not None,
+            'text_extracted': bool(extracted_text.strip()),
+            'vector_stored': vector_success if 'vector_success' in locals() else False,
+            'searchable': True,  # Document is now searchable via vector similarity
+            'ocr_metadata': {
+                'success': ocr_result.get('success', False) if ocr_result else False,
+                'confidence': ocr_result.get('confidence', 0) if ocr_result else 0,
+                'word_count': ocr_result.get('word_count', 0) if ocr_result else 0,
+                'character_count': ocr_result.get('character_count', 0) if ocr_result else 0,
+                'pages_processed': ocr_result.get('pages_processed', 0) if ocr_result else 0,
+                'error': ocr_result.get('error') if ocr_result and not ocr_result.get('success') else None
+            },
+            'vector_metadata': {
+                'stored_in_vector_db': vector_success if 'vector_success' in locals() else False,
+                'vector_document_id': vector_doc_id,
+                'content_length': len(content_for_vector_db),
+                'embedding_model': 'text-embedding-3-small'
             }
-            
-            current_app.logger.info(f"Document uploaded successfully with OCR processing: {document_metadata}")
-            
-            return jsonify(document_metadata), 201
-            
-        except Exception as e:
-            current_app.logger.error(f"Error uploading to OpenAI Vector Store: {str(e)}")
-            return jsonify({'error': f'Failed to upload to vector store: {str(e)}'}), 500
+        }
+
+        current_app.logger.info(f"Document uploaded successfully with OCR processing: {document_metadata}")
+
+        return jsonify(document_metadata), 201
+
+    except Exception as e:
+        current_app.logger.error(f"Error uploading to OpenAI Vector Store: {str(e)}")
+        return jsonify({'error': f'Failed to upload to vector store: {str(e)}'}), 500
         
     except Exception as e:
         current_app.logger.error(f"Error creating document: {str(e)}")
@@ -343,10 +343,6 @@ def delete_document(document_id):
         # Local vector database removed - using OpenAI vector store instead
         # Document deletion from OpenAI vector store is handled above
         deleted_from_vector = True  # OpenAI vector store handles this
-                current_app.logger.warning(f"Could not find document {document_id} in vector database")
-
-        except Exception as e:
-            current_app.logger.warning(f"Error deleting from vector database: {str(e)}")
 
         # Try to delete from local database if it exists
         try:
