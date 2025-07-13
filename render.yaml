@@ -16,7 +16,7 @@ services:
       - key: DATABASE_URL
         value: postgresql://neondb_owner:npg_RnWCiGa64cZz@ep-twilight-salad-a8s70q3n.eastus2.azure.neon.tech/gopalan_atlantis?sslmode=require
       - key: FIREFLY_BASE_URL
-        value: https://firefly-iii.onrender.com
+        value: https://firefly-iii-production.onrender.com
       - key: FIREFLY_API_TOKEN
         sync: false
       - key: OPENAI_API_URL
@@ -45,3 +45,18 @@ services:
         sync: false
       - key: OCR_SPACE_API_KEY
         sync: false
+
+  # Frontend Static Site Service
+  - type: static
+    name: phygital-frontend
+    buildCommand: cd phygital-facility-manager/frontend && npm ci && npm run build
+    staticPublishPath: ./phygital-facility-manager/frontend/dist
+    region: oregon
+    plan: starter
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://phygital-backend.onrender.com
