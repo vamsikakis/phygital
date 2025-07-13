@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <!-- Cache buster: Force rebuild 2025-07-13-v3 -->
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -26,8 +27,61 @@
   <body>
     <div id="root"></div>
 
-    <!-- Load extension error suppression script -->
-    <script src="/extension-blocker.js"></script>
+    <!-- Inline extension error suppression - MUST load before React -->
+    <script>
+      // Immediate error suppression before any extensions can inject
+      (function() {
+        'use strict';
+
+        // Override console methods immediately
+        const originalError = console.error;
+        const originalWarn = console.warn;
+
+        console.error = function(...args) {
+          const message = args.join(' ');
+          if (message.includes('WebSocket connection') && message.includes('localhost:8098')) return;
+          if (message.includes('inject.bundle.js')) return;
+          if (message.includes('runtime.lastError')) return;
+          if (message.includes('message port closed')) return;
+          originalError.apply(console, args);
+        };
+
+        console.warn = function(...args) {
+          const message = args.join(' ');
+          if (message.includes('WebSocket connection') && message.includes('localhost:8098')) return;
+          if (message.includes('inject.bundle.js')) return;
+          originalWarn.apply(console, args);
+        };
+
+        // Block WebSocket connections immediately
+        const OriginalWebSocket = window.WebSocket;
+        window.WebSocket = function(url, protocols) {
+          if (typeof url === 'string' && url.includes('localhost:8098')) {
+            return {
+              readyState: 3,
+              close: function() {},
+              addEventListener: function() {},
+              removeEventListener: function() {},
+              send: function() {}
+            };
+          }
+          return new OriginalWebSocket(url, protocols);
+        };
+
+        // Block runtime.lastError
+        if (typeof chrome !== 'undefined' && chrome.runtime) {
+          const originalRuntime = chrome.runtime;
+          Object.defineProperty(chrome, 'runtime', {
+            get: function() {
+              return {
+                ...originalRuntime,
+                lastError: undefined
+              };
+            }
+          });
+        }
+      })();
+    </script>
 
     <script type="module" src="/src/index.tsx"></script>
     <noscript>You need to enable JavaScript to run this app.</noscript>
