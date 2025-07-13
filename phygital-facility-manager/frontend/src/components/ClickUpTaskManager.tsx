@@ -38,7 +38,7 @@ import {
 } from '@mui/icons-material';
 
 // API Configuration
-const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-s839.onrender.com';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-backend.onrender.com';
 
 interface Task {
   id: string;
@@ -122,7 +122,7 @@ const ClickUpTaskManager: React.FC = () => {
 
   const loadTeamMembers = async () => {
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-s839.onrender.com';
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-backend.onrender.com';
       const response = await fetch(`${API_BASE}/api/clickup/team/members`);
       const data = await response.json();
 
@@ -155,7 +155,7 @@ const ClickUpTaskManager: React.FC = () => {
         assignees: formData.assignees
       };
 
-      const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-s839.onrender.com';
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-backend.onrender.com';
       const response = await fetch(`${API_BASE}/api/clickup/tasks`, {
         method: 'POST',
         headers: {
@@ -196,7 +196,7 @@ const ClickUpTaskManager: React.FC = () => {
         tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
       };
 
-      const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-s839.onrender.com';
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-backend.onrender.com';
       const response = await fetch(`${API_BASE}/api/clickup/tasks/${editingTask.id}`, {
         method: 'PUT',
         headers: {
@@ -266,7 +266,7 @@ const ClickUpTaskManager: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-s839.onrender.com';
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-backend.onrender.com';
       const response = await fetch(`${API_BASE}/api/clickup/facility/maintenance-request`, {
         method: 'POST',
         headers: {
@@ -341,7 +341,7 @@ const ClickUpTaskManager: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-s839.onrender.com';
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-backend.onrender.com';
       const response = await fetch(`${API_BASE}/api/clickup/test`);
       const data = await response.json();
 

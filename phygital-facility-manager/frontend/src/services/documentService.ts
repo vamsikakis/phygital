@@ -23,7 +23,7 @@ export interface DocumentUploadResponse {
 }
 
 class DocumentService {
-  private readonly API_BASE = `${import.meta.env.VITE_REACT_APP_API_URL || ''}/api/documents`;
+  private readonly API_BASE = `${import.meta.env.VITE_API_URL || 'https://phygital-backend.onrender.com'}/api/documents`;
 
   /**
    * Get all documents

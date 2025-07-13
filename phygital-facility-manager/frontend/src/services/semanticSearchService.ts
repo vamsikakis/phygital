@@ -30,7 +30,7 @@ export interface SearchRequest {
 }
 
 class SemanticSearchService {
-  private readonly API_BASE = `${import.meta.env.VITE_REACT_APP_API_URL || ''}/api/documents`;
+  private readonly API_BASE = `${import.meta.env.VITE_API_URL || 'https://phygital-backend.onrender.com'}/api/documents`;
 
   /**
    * Perform semantic search on documents

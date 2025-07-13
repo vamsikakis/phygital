@@ -22,10 +22,7 @@ class FireflyService:
         self.api_token = os.getenv('FIREFLY_API_TOKEN')
         self.api_base = f"{self.base_url}/api/v1"
 
-        # Debug logging to see what URL is being used
-        print(f"DEBUG: Firefly III Base URL: {self.base_url}")
-        print(f"DEBUG: Firefly III API Base: {self.api_base}")
-        print(f"DEBUG: API Token configured: {'Yes' if self.api_token else 'No'}")
+
 
         if not self.api_token:
             # Use print instead of current_app.logger during initialization
@@ -69,10 +66,6 @@ class FireflyService:
     def test_connection(self) -> Dict[str, Any]:
         """Test connection to Firefly III"""
         try:
-            # Debug logging
-            print(f"DEBUG: Testing connection to {self.api_base}/about")
-            current_app.logger.info(f"Testing Firefly III connection to: {self.api_base}/about")
-
             response = self._make_request('GET', 'about')
             return {
                 'success': True,
@@ -82,7 +75,6 @@ class FireflyService:
             }
         except Exception as e:
             current_app.logger.error(f"Failed to connect to Firefly III: {e}")
-            print(f"DEBUG: Connection failed to {self.api_base}/about - Error: {e}")
             return {
                 'success': False,
                 'error': str(e),

@@ -39,6 +39,9 @@ import AccountManager from '../components/financial/AccountManager';
 import TransactionManager from '../components/financial/TransactionManager';
 import BudgetManager from '../components/financial/BudgetManager';
 
+// API Configuration
+const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-backend.onrender.com';
+
 interface FinancialSummary {
   total_assets: number;
   total_liabilities: number;
@@ -98,7 +101,7 @@ const FinancialDashboard: React.FC = () => {
 
   const testFireflyConnection = async () => {
     try {
-      const response = await fetch('/api/firefly/test');
+      const response = await fetch(`${API_BASE}/api/firefly/test`);
       const data = await response.json();
       setFireflyConnected(data.success);
 
@@ -121,23 +124,23 @@ const FinancialDashboard: React.FC = () => {
 
     try {
       // Load summary data
-      const summaryResponse = await fetch('/api/firefly/summary');
+      const summaryResponse = await fetch(`${API_BASE}/api/firefly/summary`);
       const summaryData = await summaryResponse.json();
-      
+
       if (summaryData.success) {
         setSummary(summaryData.summary);
       }
 
       // Load accounts
-      const accountsResponse = await fetch('/api/firefly/accounts');
+      const accountsResponse = await fetch(`${API_BASE}/api/firefly/accounts`);
       const accountsData = await accountsResponse.json();
-      
+
       if (accountsData.success) {
         setAccounts(accountsData.accounts);
       }
 
       // Load budgets
-      const budgetsResponse = await fetch('/api/firefly/budgets');
+      const budgetsResponse = await fetch(`${API_BASE}/api/firefly/budgets`);
       const budgetsData = await budgetsResponse.json();
       
       if (budgetsData.success) {
@@ -222,7 +225,7 @@ const FinancialDashboard: React.FC = () => {
               docker run -d --name firefly-iii -p 8080:8080 \<br/>
               &nbsp;&nbsp;-e APP_KEY=$(head /dev/urandom | LC_ALL=C tr -dc 'A-Za-z0-9' | head -c 32) \<br/>
               &nbsp;&nbsp;-e DB_CONNECTION=sqlite \<br/>
-              &nbsp;&nbsp;-e APP_URL=http://localhost:8080 \<br/>
+              &nbsp;&nbsp;-e APP_URL=https://firefly-iii-production.onrender.com \<br/>
               &nbsp;&nbsp;-v firefly_iii_upload:/var/www/html/storage/upload \<br/>
               &nbsp;&nbsp;fireflyiii/core:latest
             </Box>
@@ -230,7 +233,7 @@ const FinancialDashboard: React.FC = () => {
 
           <Typography variant="body2" component="div" sx={{ mb: 2 }}>
             <strong>2. Complete Initial Setup:</strong><br/>
-            • Open <a href="http://localhost:8080" target="_blank" rel="noopener noreferrer">http://localhost:8080</a><br/>
+            • Open <a href="https://firefly-iii-production.onrender.com" target="_blank" rel="noopener noreferrer">https://firefly-iii-production.onrender.com</a><br/>
             • Create your admin account<br/>
             • Complete the setup wizard
           </Typography>
@@ -255,7 +258,7 @@ const FinancialDashboard: React.FC = () => {
               fontSize: '0.875rem',
               mt: 1
             }}>
-              FIREFLY_BASE_URL=http://localhost:8080<br/>
+              FIREFLY_BASE_URL=https://firefly-iii-production.onrender.com<br/>
               FIREFLY_API_TOKEN=your_very_long_token_here
             </Box>
           </Typography>
@@ -272,7 +275,7 @@ const FinancialDashboard: React.FC = () => {
 
           <Button
             variant="outlined"
-            href="http://localhost:8080"
+            href="https://firefly-iii-production.onrender.com"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -317,7 +320,7 @@ const FinancialDashboard: React.FC = () => {
             variant="contained"
             startIcon={<AddIcon />}
             sx={{ ml: 1 }}
-            href="http://localhost:8080"
+            href="https://firefly-iii-production.onrender.com"
             target="_blank"
             rel="noopener noreferrer"
           >

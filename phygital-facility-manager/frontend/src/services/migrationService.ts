@@ -24,7 +24,7 @@ export interface MigrationStatus {
 }
 
 class MigrationService {
-  private API_BASE = `${import.meta.env.VITE_REACT_APP_API_URL || ''}/api/migration`;
+  private API_BASE = `${import.meta.env.VITE_API_URL || 'https://phygital-backend.onrender.com'}/api/migration`;
 
   public async migrateFromWeaviate(documents: any[]): Promise<MigrationResponse> {
     try {
