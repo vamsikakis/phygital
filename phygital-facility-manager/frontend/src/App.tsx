@@ -13,6 +13,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import SetupPassword from './pages/SetupPassword';
 import ResetPassword from './pages/ResetPassword';
 import Home from './pages/Home';
+import AdminDashboard from './pages/AdminDashboard';
 import KnowledgeBase from './pages/KnowledgeBase';
 import Communication from './pages/Communication';
 import FinancialDashboard from './pages/FinancialDashboard';
@@ -165,6 +166,11 @@ function App() {
               </ProtectedRoute>
             }>
               <Route index element={<Home />} />
+              <Route path="admin-dashboard" element={
+                <ProtectedRoute requiredRoles={['admin', 'management']}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } />
               <Route path="knowledge-base" element={<KnowledgeBase />} />
               <Route path="communication" element={
                 <ProtectedRoute requiredRoles={['admin', 'management', 'fm']}>

@@ -34,6 +34,12 @@ const navigationItems = [
     roles: ['admin', 'management', 'fm', 'owner'],
   },
   {
+    label: 'Admin Dashboard',
+    path: '/admin-dashboard',
+    icon: <SettingsIcon />,
+    roles: ['admin', 'management'],
+  },
+  {
     label: 'User Management',
     path: '/user-management',
     icon: <PeopleIcon />,
