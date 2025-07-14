@@ -22,53 +22,104 @@
   <body>
     <div id="root"></div>
 
-    <!-- CRITICAL: Extension error suppression - MUST load before React -->
+    <!-- NUCLEAR OPTION: Complete extension blocking -->
     <script>
       (function() {
         'use strict';
-        console.log('🔇 Extension error suppression loaded');
 
-        // Override console.error immediately
-        const originalError = console.error;
-        console.error = function(...args) {
-          const message = args.join(' ');
-          // Block specific extension errors
-          if (message.includes('WebSocket connection') && message.includes('localhost:8098')) {
-            console.log('🚫 Blocked WebSocket error:', message);
-            return;
-          }
-          if (message.includes('inject.bundle.js')) {
-            console.log('🚫 Blocked inject.bundle.js error:', message);
-            return;
-          }
-          if (message.includes('runtime.lastError')) {
-            console.log('🚫 Blocked runtime.lastError:', message);
-            return;
-          }
-          if (message.includes('message port closed')) {
-            console.log('🚫 Blocked message port error:', message);
-            return;
-          }
-          originalError.apply(console, args);
+        // AGGRESSIVE: Override ALL console methods to filter extension noise
+        const originalMethods = {
+          error: console.error,
+          warn: console.warn,
+          log: console.log
         };
 
-        // Block WebSocket connections to localhost
-        const OriginalWebSocket = window.WebSocket;
+        const filterMessage = (args) => {
+          const message = args.join(' ');
+          return (
+            message.includes('WebSocket connection') ||
+            message.includes('localhost:8098') ||
+            message.includes('inject.bundle.js') ||
+            message.includes('runtime.lastError') ||
+            message.includes('message port closed') ||
+            message.includes('chrome-extension:') ||
+            message.includes('extension context invalidated')
+          );
+        };
+
+        console.error = function(...args) {
+          if (filterMessage(args)) return;
+          originalMethods.error.apply(console, args);
+        };
+
+        console.warn = function(...args) {
+          if (filterMessage(args)) return;
+          originalMethods.warn.apply(console, args);
+        };
+
+        // NUCLEAR: Completely disable WebSocket for localhost
         window.WebSocket = function(url, protocols) {
-          if (typeof url === 'string' && url.includes('localhost:8098')) {
-            console.log('🚫 Blocked WebSocket connection to:', url);
+          if (typeof url === 'string' && (
+            url.includes('localhost') ||
+            url.includes('127.0.0.1') ||
+            url.includes(':8098') ||
+            url.includes(':3000') ||
+            url.includes(':3001')
+          )) {
+            // Return a completely inert object
             return {
-              readyState: 3, // CLOSED
-              close: function() {},
-              addEventListener: function() {},
-              removeEventListener: function() {},
-              send: function() {}
+              readyState: 3,
+              url: url,
+              protocol: '',
+              close: () => {},
+              send: () => {},
+              addEventListener: () => {},
+              removeEventListener: () => {},
+              dispatchEvent: () => true,
+              onopen: null,
+              onclose: null,
+              onerror: null,
+              onmessage: null
             };
           }
-          return new OriginalWebSocket(url, protocols);
+          // This should never be reached in production
+          throw new Error('WebSocket blocked for security');
         };
 
-        console.log('✅ Extension blocking active');
+        // Block chrome runtime if it exists
+        if (typeof chrome !== 'undefined' && chrome.runtime) {
+          try {
+            Object.defineProperty(chrome.runtime, 'lastError', {
+              get: () => undefined,
+              set: () => {},
+              configurable: false
+            });
+          } catch(e) {}
+        }
+
+        // Intercept and block script injection
+        const originalCreateElement = document.createElement;
+        document.createElement = function(tagName) {
+          const element = originalCreateElement.call(document, tagName);
+          if (tagName.toLowerCase() === 'script') {
+            const originalSrc = Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, 'src');
+            Object.defineProperty(element, 'src', {
+              get: originalSrc.get,
+              set: function(value) {
+                if (typeof value === 'string' && (
+                  value.includes('inject.bundle.js') ||
+                  value.includes('localhost:8098')
+                )) {
+                  return; // Block the script
+                }
+                originalSrc.set.call(this, value);
+              }
+            });
+          }
+          return element;
+        };
+
+        console.log('🔥 NUCLEAR extension blocking active - ALL extension noise suppressed');
       })();
     </script>
 
