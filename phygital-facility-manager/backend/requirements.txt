@@ -17,3 +17,4 @@ cryptography==41.0.5  # For securely storing tokens
 requests==2.31.0
 pyjwt==2.8.0
 python-dateutil==2.8.2
+bcrypt==4.0.1  # For password hashing

@@ -53,7 +53,23 @@ class User(Base):
     apartment = Column(String)  # Changed from apartment_number to apartment
     role = Column(String, default='resident')  # admin, staff, resident
     google_id = Column(String, unique=True)
+
+    # Password and authentication fields
+    password_hash = Column(String)  # Hashed password
+    has_password = Column(Boolean, default=False)  # Whether user has set up password
+
+    # Email verification and password reset tokens
+    verification_token = Column(String)  # Hashed token for security
+    token_expiration = Column(DateTime)  # Token expiration time
+    token_type = Column(String)  # 'password_setup', 'password_reset', 'email_verification'
+
+    # Account status
+    is_active = Column(Boolean, default=True)
+    email_verified = Column(Boolean, default=False)
+    last_login = Column(DateTime)
+
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class Document(Base):
     __tablename__ = 'documents'

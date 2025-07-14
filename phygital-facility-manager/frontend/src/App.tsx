@@ -8,6 +8,10 @@ import { AuthProvider } from './contexts/AuthContext';
 
 // Pages
 import Login from './pages/Login';
+import Signup from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
+import SetupPassword from './pages/SetupPassword';
+import ResetPassword from './pages/ResetPassword';
 import Home from './pages/Home';
 import KnowledgeBase from './pages/KnowledgeBase';
 import Communication from './pages/Communication';
@@ -149,10 +153,14 @@ function App() {
           <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/setup-password" element={<SetupPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Protected Routes */}
             <Route path="/" element={
-              <ProtectedRoute>
+              <ProtectedRoute fallbackPath="/signup">
                 <MainLayout />
               </ProtectedRoute>
             }>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -8,22 +8,39 @@ import {
   Typography,
   Alert,
   Paper,
+  MenuItem,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 
-const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+const Signup: React.FC = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    apartment: '',
+    role: 'owner', // Default role
+  });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  
-  // Get the intended destination or default to home
-  const from = location.state?.from?.pathname || '/';
+
+  const roles = [
+    { value: 'owner', label: 'Property Owner' },
+    { value: 'fm', label: 'Facility Manager' },
+    { value: 'management', label: 'Management' },
+    { value: 'admin', label: 'Administrator' },
+  ];
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,10 +48,34 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      await login(email, password);
-      navigate(from, { replace: true });
+      // Call signup API
+      const API_BASE = 'https://phygital-backend.onrender.com';
+      const response = await fetch(`${API_BASE}/api/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          apartment: formData.apartment,
+          role: formData.role,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Registration failed');
+      }
+
+      const data = await response.json();
+
+      // Show success message and redirect to login
+      alert('Registration successful! You can now login with your email address.');
+      navigate('/login');
+
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please try again.');
+      setError(err.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -86,14 +127,24 @@ const Login: React.FC = () => {
                 fontWeight: 400,
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',
+                mb: 1,
               }}
             >
               Facility Management System
             </Typography>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 600,
+                color: 'primary.main',
+              }}
+            >
+              Create Account
+            </Typography>
           </Box>
 
-          {/* Login Form */}
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 4 }}>
+          {/* Signup Form */}
+          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
             {error && (
               <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
                 {error}
@@ -102,10 +153,10 @@ const Login: React.FC = () => {
 
             <TextField
               fullWidth
-              label="Email Address"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              label="Full Name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
               required
               disabled={loading}
               sx={{
@@ -119,14 +170,15 @@ const Login: React.FC = () => {
 
             <TextField
               fullWidth
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              label="Email Address"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
               required
               disabled={loading}
               sx={{
-                mb: 4,
+                mb: 3,
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
                   backgroundColor: 'rgba(245, 245, 247, 0.8)',
@@ -136,20 +188,47 @@ const Login: React.FC = () => {
 
             <TextField
               fullWidth
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
+              label="Apartment Number"
+              name="apartment"
+              value={formData.apartment}
+              onChange={handleChange}
+              placeholder="e.g., A-101, B-205"
               disabled={loading}
               sx={{
-                mb: 4,
+                mb: 3,
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
                   backgroundColor: 'rgba(245, 245, 247, 0.8)',
                 },
               }}
             />
+
+            <FormControl fullWidth sx={{ mb: 3 }}>
+              <InputLabel>Role</InputLabel>
+              <Select
+                name="role"
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                disabled={loading}
+                sx={{
+                  borderRadius: 2,
+                  backgroundColor: 'rgba(245, 245, 247, 0.8)',
+                }}
+              >
+                {roles.map((role) => (
+                  <MenuItem key={role.value} value={role.value}>
+                    {role.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <Box sx={{ mb: 3, p: 2, backgroundColor: 'rgba(91, 92, 230, 0.1)', borderRadius: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'left' }}>
+                <strong>Note:</strong> This system uses email-based authentication.
+                After registration, you can login using just your email address.
+              </Typography>
+            </Box>
 
             <Button
               type="submit"
@@ -175,35 +254,22 @@ const Login: React.FC = () => {
               {loading ? (
                 <CircularProgress size={24} color="inherit" />
               ) : (
-                'Log In'
+                'Create Account'
               )}
             </Button>
 
-            <Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ mt: 3 }}>
               <Typography variant="body2" color="text.secondary">
-                Don't have an account?{' '}
+                Already have an account?{' '}
                 <Link
-                  to="/signup"
+                  to="/login"
                   style={{
                     color: '#5B5CE6',
                     textDecoration: 'none',
                     fontWeight: 500,
                   }}
                 >
-                  Create account
-                </Link>
-              </Typography>
-
-              <Typography variant="body2">
-                <Link
-                  to="/forgot-password"
-                  style={{
-                    color: '#5B5CE6',
-                    textDecoration: 'none',
-                    fontWeight: 500,
-                  }}
-                >
-                  Forgot password?
+                  Sign in here
                 </Link>
               </Typography>
             </Box>
@@ -214,4 +280,4 @@ const Login: React.FC = () => {
   );
 };
 
-export default Login;
+export default Signup;

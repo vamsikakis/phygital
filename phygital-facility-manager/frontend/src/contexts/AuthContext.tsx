@@ -12,7 +12,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (email: string, password?: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
   isAuthenticated: boolean;
@@ -83,10 +83,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Login function
-  const login = async (email: string, password?: string) => {
+  const login = async (email: string, password: string) => {
     try {
       setLoading(true);
-      
+
       const response = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: {
@@ -101,13 +101,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const data = await response.json();
-      
+
       // Store auth data
       setToken(data.token);
       setUser(data.user);
       localStorage.setItem('auth_token', data.token);
       localStorage.setItem('auth_user', JSON.stringify(data.user));
-      
+
     } catch (error) {
       console.error('Login error:', error);
       throw error;
