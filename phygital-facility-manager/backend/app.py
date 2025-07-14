@@ -22,6 +22,14 @@ app.config.from_object(config[os.getenv('FLASK_ENV', 'default')])
 cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:5173').split(',')
 CORS(app, origins=cors_origins, supports_credentials=True)
 
+# Initialize database tables
+try:
+    from database import init_db
+    init_db()
+    app.logger.info("Database tables initialized successfully")
+except Exception as e:
+    app.logger.error(f"Error initializing database: {e}")
+
 # --- MOVE THIS BLOCK UP ---
 # Register Assistant routes FIRST, so they are available when the app starts and receives requests
 from routes.assistant_routes import assistant_bp
