@@ -4,9 +4,13 @@ Ultra Minimal Flask App for Deployment Testing
 
 import os
 from flask import Flask, jsonify
+from flask_cors import CORS
 
 # Initialize Flask app
 app = Flask(__name__)
+
+# Configure CORS
+CORS(app, origins=['*'])
 
 # Basic health check endpoint
 @app.route('/health', methods=['GET'])
