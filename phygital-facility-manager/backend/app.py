@@ -466,12 +466,13 @@ def serve_frontend(path=''):
     return send_from_directory(frontend_dist, path)
 
 # Initialize database tables after all routes are registered
-try:
-    from database import init_db
-    init_db()
-    app.logger.info("Database tables initialized successfully")
-except Exception as e:
-    app.logger.error(f"Error initializing database: {e}")
+# Temporarily disabled for deployment debugging
+# try:
+#     from database import init_db
+#     init_db()
+#     app.logger.info("Database tables initialized successfully")
+# except Exception as e:
+#     app.logger.error(f"Error initializing database: {e}")
 
 if __name__ == '__main__':
     import os
