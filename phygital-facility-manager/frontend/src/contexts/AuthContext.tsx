@@ -32,8 +32,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // API base URL
-  const API_BASE = 'https://phygital-backend.onrender.com';
+  // API base URL - use environment variable or fallback
+  const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-backend.onrender.com';
 
   // Initialize auth state from localStorage
   useEffect(() => {

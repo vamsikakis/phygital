@@ -76,7 +76,7 @@ const SetupPassword: React.FC = () => {
     }
 
     try {
-      const API_BASE = 'https://phygital-backend.onrender.com';
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-backend.onrender.com';
       const response = await fetch(`${API_BASE}/api/auth/setup-password`, {
         method: 'POST',
         headers: {

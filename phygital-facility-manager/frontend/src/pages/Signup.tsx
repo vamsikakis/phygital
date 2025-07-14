@@ -49,7 +49,7 @@ const Signup: React.FC = () => {
 
     try {
       // Call signup API
-      const API_BASE = 'https://phygital-backend.onrender.com';
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-backend.onrender.com';
       const response = await fetch(`${API_BASE}/api/auth/register`, {
         method: 'POST',
         headers: {
