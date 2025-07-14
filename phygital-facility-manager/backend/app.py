@@ -1,55 +1,85 @@
+"""
+Phygital Facility Management API
+Deployment-friendly version with graceful error handling
+"""
+
 import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from config import config
-import openai
-from dotenv import load_dotenv
-from services.openai_assistant_service import openai_assistant_service
-
-# Create the modules files
-from modules.akc.knowledge_base import ApartmentKnowledgeBase
-from modules.oce.communication import OwnersCommunication
-from modules.hdc.helpdesk import HelpDesk
 
 # Load environment variables
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    print("Warning: python-dotenv not available")
 
 # Initialize Flask app
 app = Flask(__name__)
-app.config.from_object(config[os.getenv('FLASK_ENV', 'default')])
+
+# Basic configuration
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
+app.config['OPENAI_API_KEY'] = os.getenv('OPENAI_API_KEY')
 
 # Configure CORS with allowed origins
-cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:5173').split(',')
+cors_origins = os.getenv('CORS_ORIGINS', '*').split(',')
 CORS(app, origins=cors_origins, supports_credentials=True)
 
-# --- MOVE THIS BLOCK UP ---
-# Register Assistant routes FIRST, so they are available when the app starts and receives requests
-from routes.assistant_routes import assistant_bp
-app.register_blueprint(assistant_bp, url_prefix='/api/assistant')
-app.logger.info("Registered Assistant routes")
-# --- END MOVE ---
+# Global variables for optional services
+openai_client = None
+akc = None
+oce = None
+hdc = None
+openai_assistant_service = None
 
-# Initialize OpenAI Assistant on startup
+# Try to initialize OpenAI and modules
+try:
+    import openai
+    if app.config['OPENAI_API_KEY']:
+        openai_client = openai.OpenAI(api_key=app.config['OPENAI_API_KEY'])
+        app.logger.info("OpenAI client initialized successfully")
+
+        # Try to import modules
+        try:
+            from modules.akc.knowledge_base import ApartmentKnowledgeBase
+            from modules.oce.communication import OwnersCommunication
+            from modules.hdc.helpdesk import HelpDesk
+
+            akc = ApartmentKnowledgeBase(openai_client)
+            oce = OwnersCommunication(openai_client)
+            hdc = HelpDesk(openai_client)
+            app.logger.info("All modules initialized successfully")
+        except ImportError as e:
+            app.logger.warning(f"Modules not available: {e}")
+
+        # Try to import assistant service
+        try:
+            from services.openai_assistant_service import openai_assistant_service
+            app.logger.info("OpenAI Assistant service available")
+        except ImportError as e:
+            app.logger.warning(f"OpenAI Assistant service not available: {e}")
+    else:
+        app.logger.warning("OpenAI API key not configured")
+except ImportError as e:
+    app.logger.warning(f"OpenAI not available: {e}")
+
+# Initialize OpenAI Assistant on startup (if available)
 def initialize_assistant():
     try:
-        # This call will now correctly use the service, and if the frontend
-        # also calls /api/assistant/init, that route will be available.
-        result = openai_assistant_service.initialize()
-        app.logger.info(f"OpenAI Assistant initialized: {result}")
+        if openai_assistant_service:
+            result = openai_assistant_service.initialize()
+            app.logger.info(f"OpenAI Assistant initialized: {result}")
+        else:
+            app.logger.warning("OpenAI Assistant service not available")
     except Exception as e:
         app.logger.error(f"Failed to initialize OpenAI Assistant: {str(e)}")
 
 # Call initialize_assistant at startup
-with app.app_context():
-    initialize_assistant()
-
-# Set up OpenAI client
-client = openai.OpenAI(api_key=app.config['OPENAI_API_KEY'])
-
-# Initialize modules
-akc = ApartmentKnowledgeBase(client)
-oce = OwnersCommunication(client)
-hdc = HelpDesk(client)
+try:
+    with app.app_context():
+        initialize_assistant()
+except Exception as e:
+    app.logger.error(f"Error during assistant initialization: {e}")
 
 @app.route('/', methods=['GET'])
 def root():
@@ -76,10 +106,17 @@ def process_query():
     data = request.json
     if not data or 'query' not in data:
         return jsonify({"error": "Missing query parameter"}), 400
-    
+
     query = data['query']
-    module = data.get('module', 'auto')  # If no module specified, auto-detect
-    
+    module = data.get('module', 'auto')
+
+    # Check if modules are available
+    if not any([akc, oce, hdc]):
+        return jsonify({
+            "error": "AI modules not available - OpenAI integration not configured",
+            "response": "I'm sorry, but the AI assistant is currently not available. Please check the OpenAI configuration."
+        }), 503
+
     # Auto-detect which module should handle this query
     if module == 'auto':
         if any(keyword in query.lower() for keyword in ['document', 'rule', 'policy', 'knowledge', 'information']):
@@ -87,17 +124,19 @@ def process_query():
         elif any(keyword in query.lower() for keyword in ['announcement', 'communication', 'event', 'feedback', 'poll']):
             module = 'oce'
         else:
-            module = 'hdc'  # Default to help desk for general questions
-    
+            module = 'hdc'
+
     # Route to appropriate module
     try:
-        if module == 'akc':
+        if module == 'akc' and akc:
             response = akc.process_query(query)
-        elif module == 'oce':
+        elif module == 'oce' and oce:
             response = oce.process_query(query)
-        else:  # hdc
+        elif module == 'hdc' and hdc:
             response = hdc.process_query(query)
-        
+        else:
+            response = f"Module '{module}' is not available. Please check the configuration."
+
         return jsonify({"response": response, "module": module}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -105,6 +144,8 @@ def process_query():
 @app.route('/api/akc/documents', methods=['GET'])
 def get_documents():
     try:
+        if not akc:
+            return jsonify({"error": "AKC module not available"}), 503
         documents = akc.get_documents()
         return jsonify({"documents": documents}), 200
     except Exception as e:
@@ -113,6 +154,8 @@ def get_documents():
 @app.route('/api/oce/announcements', methods=['GET'])
 def get_announcements():
     try:
+        if not oce:
+            return jsonify({"error": "OCE module not available"}), 503
         announcements = oce.get_announcements()
         return jsonify({"announcements": announcements}), 200
     except Exception as e:
@@ -394,6 +437,14 @@ try:
     app.logger.info("Registered authentication routes")
 except ImportError:
     app.logger.warning("Authentication routes not found")
+
+# Register Assistant routes
+try:
+    from routes.assistant_routes import assistant_bp
+    app.register_blueprint(assistant_bp, url_prefix='/api/assistant')
+    app.logger.info("Registered Assistant routes")
+except ImportError:
+    app.logger.warning("Assistant routes not found")
 
 # Register existing routes if they exist
 try:
