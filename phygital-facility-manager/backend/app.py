@@ -101,6 +101,46 @@ def root():
 def health_check():
     return jsonify({"status": "healthy"}), 200
 
+@app.route('/api/status', methods=['GET'])
+def api_status():
+    """API status with feature availability"""
+    return jsonify({
+        "status": "running",
+        "features": {
+            "openai_available": openai_client is not None,
+            "akc_module": akc is not None,
+            "oce_module": oce is not None,
+            "hdc_module": hdc is not None,
+            "assistant_service": openai_assistant_service is not None
+        },
+        "endpoints": {
+            "auth": "/api/auth/*",
+            "query": "/api/query",
+            "documents": "/api/akc/documents",
+            "announcements": "/api/oce/announcements"
+        }
+    }), 200
+
+# Basic endpoints that work without external dependencies
+@app.route('/api/firefly/test', methods=['GET'])
+def firefly_test_basic():
+    """Basic Firefly test endpoint"""
+    return jsonify({
+        "message": "Firefly endpoint available",
+        "status": "basic_mode",
+        "note": "Full Firefly integration requires additional configuration"
+    }), 200
+
+@app.route('/api/assistant/test', methods=['GET'])
+def assistant_test_basic():
+    """Basic Assistant test endpoint"""
+    return jsonify({
+        "message": "Assistant endpoint available",
+        "status": "basic_mode",
+        "openai_configured": openai_client is not None,
+        "note": "Full assistant requires OpenAI configuration"
+    }), 200
+
 @app.route('/api/query', methods=['POST'])
 def process_query():
     data = request.json
