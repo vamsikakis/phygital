@@ -39,8 +39,10 @@ import AccountManager from '../components/financial/AccountManager';
 import TransactionManager from '../components/financial/TransactionManager';
 import BudgetManager from '../components/financial/BudgetManager';
 
-// API Configuration - Remove trailing slash to prevent double slashes
-const API_BASE = (import.meta.env.VITE_API_URL || 'https://phygital-backend.onrender.com').replace(/\/$/, '');
+// API Configuration - Hardcoded to ensure correct URL
+const API_BASE = 'https://phygital-backend.onrender.com';
+console.log('🔧 API_BASE set to:', API_BASE);
+console.log('🔧 VITE_API_URL env var:', import.meta.env.VITE_API_URL);
 
 interface FinancialSummary {
   total_assets: number;
