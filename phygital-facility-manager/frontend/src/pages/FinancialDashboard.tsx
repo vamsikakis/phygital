@@ -101,8 +101,28 @@ const FinancialDashboard: React.FC = () => {
 
   const testFireflyConnection = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/firefly/test`);
+      console.log('🔍 Testing Firefly connection to:', `${API_BASE}/api/firefly/test`);
+
+      const response = await fetch(`${API_BASE}/api/firefly/test`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        // Add credentials if needed for CORS
+        credentials: 'omit'
+      });
+
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response ok:', response.ok);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
       const data = await response.json();
+      console.log('📊 Response data:', data);
+
       setFireflyConnected(data.success);
 
       if (!data.success) {
@@ -111,8 +131,9 @@ const FinancialDashboard: React.FC = () => {
         setError(null); // Clear any previous errors
       }
     } catch (error) {
+      console.error('❌ Firefly connection error:', error);
       setFireflyConnected(false);
-      setError('Failed to connect to Firefly III service');
+      setError(`Failed to connect to Firefly III service: ${error.message}`);
     }
   };
 
