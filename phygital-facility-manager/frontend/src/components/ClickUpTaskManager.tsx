@@ -341,7 +341,7 @@ const ClickUpTaskManager: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || 'https://phygital-backend.onrender.com';
+      const API_BASE = (import.meta.env.VITE_API_URL || 'https://phygital-backend.onrender.com').replace(/\/$/, '');
       const response = await fetch(`${API_BASE}/api/clickup/test`);
       const data = await response.json();
 
