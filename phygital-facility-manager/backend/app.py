@@ -17,7 +17,10 @@ load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 app.config.from_object(config[os.getenv('FLASK_ENV', 'default')])
-CORS(app)
+
+# Configure CORS with allowed origins
+cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:5173').split(',')
+CORS(app, origins=cors_origins, supports_credentials=True)
 
 # --- MOVE THIS BLOCK UP ---
 # Register Assistant routes FIRST, so they are available when the app starts and receives requests
