@@ -69,4 +69,4 @@ services:
         value: strict-origin-when-cross-origin
     envVars:
       - key: VITE_API_URL
-        value: https://phygital-backend.onrender.com
+        value: https://phygital-s839.onrender.com
