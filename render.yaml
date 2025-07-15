@@ -45,14 +45,6 @@ services:
         sync: false
       - key: OCR_SPACE_API_KEY
         sync: false
-      - key: RESEND_API_KEY
-        sync: false
-      - key: FROM_EMAIL
-        value: noreply@thephygital.in
-      - key: FRONTEND_URL
-        value: https://www.thephygital.in
-      - key: CORS_ORIGINS
-        value: http://localhost:5173,https://phygital-1-vypu.onrender.com,https://thephygital.in.onrender.com,https://www.thephygital.in,https://thephygital.in
 
   # Frontend Static Site Service
   - type: static
@@ -77,4 +69,4 @@ services:
         value: strict-origin-when-cross-origin
     envVars:
       - key: VITE_API_URL
-        value: https://phygital-s839.onrender.com
+        value: https://phygital-backend.onrender.com

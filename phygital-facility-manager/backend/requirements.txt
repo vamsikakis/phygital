@@ -1,18 +1,19 @@
-# Core application - Essential for deployment
+# Core application
+openai>=1.81.0
+openai-agents==0.0.17
 flask==2.3.3
 flask-cors==4.0.0
-gunicorn==21.2.0
 python-dotenv==1.0.0
-requests==2.31.0
+gunicorn==21.2.0
 
-# OpenAI and AI functionality - Add back gradually
-openai>=1.81.0
-
-# Database integration (Neon PostgreSQL) - Add back gradually
+# Database integration (Neon PostgreSQL)
 psycopg2-binary==2.9.9
+sqlalchemy==2.0.23
 
-# Utilities - Add back gradually
-cryptography==41.0.5
+# Google API integrations - REMOVED (not using Google services)
+
+# Utilities
+cryptography==41.0.5  # For securely storing tokens
+requests==2.31.0
 pyjwt==2.8.0
 python-dateutil==2.8.2
-bcrypt==4.0.1

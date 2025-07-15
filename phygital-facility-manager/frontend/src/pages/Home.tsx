@@ -1,247 +1,147 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
+import React from 'react';
+import { 
+  Box, 
+  Typography, 
+  Card, 
+  CardContent, 
+  CardActionArea, 
   Grid,
-  Button,
-  LinearProgress,
-  List,
-  ListItem,
-  ListItemText,
-  Divider,
-  Container,
+  Paper,
+  Avatar,
+  Button
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  Campaign as CommunicationIcon,
-  Upload as UploadIcon,
-  People as PeopleIcon,
-  Business as PropertyIcon,
-  Assignment as TaskIcon,
-} from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext';
+import ArticleIcon from '@mui/icons-material/Article';
+import ForumIcon from '@mui/icons-material/Forum';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import ClickUpIcon from '../components/icons/ClickUpIcon';
 import { useNavigate } from 'react-router-dom';
-
-// Dashboard data interface
-interface DashboardStats {
-  totalUsers: number;
-  activeProperties: number;
-  pendingTasks: number;
-  recentCommunications: string[];
-}
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { user, hasRole } = useAuth();
-  const [stats, setStats] = useState<DashboardStats>({
-    totalUsers: 1250,
-    activeProperties: 85,
-    pendingTasks: 12,
-    recentCommunications: [
-      'Swimming pool maintenance scheduled',
-      'Community gathering announcement',
-      'Monthly maintenance reminder',
-    ],
-  });
-
-  // Quick action buttons based on user role
-  const getQuickActions = () => {
-    const actions = [];
-
-    if (hasRole(['admin', 'management'])) {
-      actions.push({
-        label: 'Add New User',
-        icon: <AddIcon />,
-        onClick: () => navigate('/user-management'),
-        color: 'primary',
-      });
+  
+  const features = [
+    {
+      title: "Apartment Knowledge Base",
+      description: "Access community documents, bylaws, and important information about Gopalan Atlantis.",
+      icon: <ArticleIcon sx={{ fontSize: 40 }} />,
+      path: "/knowledge-base",
+      color: "#3f51b5"
+    },
+    {
+      title: "Owner Communication",
+      description: "Stay updated with announcements, events, and engage with the community.",
+      icon: <ForumIcon sx={{ fontSize: 40 }} />,
+      path: "/communication",
+      color: "#f50057"
+    },
+    {
+      title: "Financial Dashboard",
+      description: "Comprehensive financial management with Firefly III integration for budgets and expenses.",
+      icon: <AccountBalanceIcon sx={{ fontSize: 40 }} />,
+      path: "/financial-dashboard",
+      color: "#4caf50"
+    },
+    {
+      title: "ClickUp Tasks",
+      description: "Manage facility maintenance tasks and track progress with ClickUp integration.",
+      icon: <ClickUpIcon size={40} className="text-current" />,
+      path: "/clickup-tasks",
+      color: "#7B68EE"
+    },
+    {
+      title: "AI Assistant",
+      description: "Get intelligent assistance for facility management and apartment queries.",
+      icon: <SmartToyIcon sx={{ fontSize: 40 }} />,
+      path: "/openai-assistant",
+      color: "#009688"
     }
-
-    if (hasRole(['admin', 'management', 'fm'])) {
-      actions.push(
-        {
-          label: 'Create Announcement',
-          icon: <CommunicationIcon />,
-          onClick: () => navigate('/communication'),
-          color: 'secondary',
-        },
-        {
-          label: 'Upload Document',
-          icon: <UploadIcon />,
-          onClick: () => navigate('/document-management'),
-          color: 'primary',
-        }
-      );
-    }
-
-    return actions;
-  };
+  ];
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      {/* Header with Quick Actions */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" component="h1" sx={{ mb: 3, fontWeight: 700 }}>
-          Welcome back, {user?.name}!
+    <Box>
+      {/* Hero Section */}
+      <Paper 
+        elevation={0}
+        sx={{
+          p: 4,
+          mb: 4,
+          borderRadius: 2,
+          background: 'linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)',
+          color: 'white',
+          textAlign: 'center',
+        }}
+      >
+        <Typography variant="h4" component="h1" gutterBottom fontWeight="bold">
+          Welcome to Gopalan Atlantis
         </Typography>
+        <Typography variant="subtitle1" mb={3}>
+          Your all-in-one facility management assistant
+        </Typography>
+        <Button
+          variant="contained"
+          color="secondary"
+          size="large"
+          onClick={() => navigate("/openai-assistant")}
+        >
+          Get AI Assistance
+        </Button>
+      </Paper>
 
-        {/* Quick Action Buttons */}
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 4 }}>
-          {getQuickActions().map((action, index) => (
-            <Button
-              key={index}
-              variant="contained"
-              startIcon={action.icon}
-              onClick={action.onClick}
-              sx={{
-                borderRadius: 2,
-                px: 3,
-                py: 1.5,
-                fontWeight: 600,
-              }}
-              color={action.color as any}
-            >
-              {action.label}
-            </Button>
-          ))}
-        </Box>
-      </Box>
-
-      {/* Dashboard Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {/* Total Users Card */}
-        {hasRole(['admin', 'management']) && (
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ p: 3, textAlign: 'center' }}>
-              <PeopleIcon sx={{ fontSize: 40, color: 'primary.main', mb: 2 }} />
-              <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
-                {stats.totalUsers.toLocaleString()}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                TOTAL USERS
-              </Typography>
-            </Card>
-          </Grid>
-        )}
-
-        {/* Active Properties Card */}
-        {hasRole(['admin', 'management', 'fm']) && (
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ p: 3, textAlign: 'center' }}>
-              <PropertyIcon sx={{ fontSize: 40, color: 'secondary.main', mb: 2 }} />
-              <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
-                {stats.activeProperties}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                ACTIVE PROPERTIES
-              </Typography>
-            </Card>
-          </Grid>
-        )}
-
-        {/* Pending Tasks Card */}
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 3, textAlign: 'center' }}>
-            <TaskIcon sx={{ fontSize: 40, color: 'warning.main', mb: 2 }} />
-            <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
-              {stats.pendingTasks}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              PENDING TASKS
-            </Typography>
-          </Card>
-        </Grid>
-
-        {/* Recent Communications Card */}
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 3, height: '100%' }}>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-              RECENT COMMUNICATIONS
-            </Typography>
-            <Box>
-              {[1, 2, 3].map((item) => (
-                <Box key={item} sx={{ mb: 1 }}>
-                  <LinearProgress
-                    variant="determinate"
-                    value={Math.random() * 100}
-                    sx={{
-                      height: 8,
-                      borderRadius: 4,
-                      backgroundColor: 'grey.200',
-                      '& .MuiLinearProgress-bar': {
-                        backgroundColor: 'primary.main',
-                      },
-                    }}
-                  />
-                </Box>
-              ))}
-            </Box>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Recent Activity */}
+      {/* Feature Cards */}
       <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
-          <Card sx={{ p: 3 }}>
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-              Recent Activity
-            </Typography>
-            <List>
-              {stats.recentCommunications.map((communication, index) => (
-                <React.Fragment key={index}>
-                  <ListItem sx={{ px: 0 }}>
-                    <ListItemText
-                      primary={communication}
-                      secondary={`${Math.floor(Math.random() * 24)} hours ago`}
-                    />
-                  </ListItem>
-                  {index < stats.recentCommunications.length - 1 && <Divider />}
-                </React.Fragment>
-              ))}
-            </List>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Card sx={{ p: 3 }}>
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-              Quick Links
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Button
-                variant="outlined"
-                fullWidth
-                onClick={() => navigate('/knowledge-base')}
-                sx={{ justifyContent: 'flex-start' }}
+        {features.map((feature) => (
+          <Grid item xs={12} sm={6} md={3} key={feature.title}>
+            <Card 
+              elevation={3} 
+              sx={{ 
+                height: '100%',
+                transition: 'transform 0.3s, box-shadow 0.3s',
+                '&:hover': {
+                  transform: 'translateY(-5px)',
+                  boxShadow: '0px 10px 20px rgba(0,0,0,0.1)'
+                }
+              }}
+            >
+              <CardActionArea 
+                sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
+                onClick={() => navigate(feature.path)}
               >
-                Knowledge Base
-              </Button>
-              <Button
-                variant="outlined"
-                fullWidth
-                onClick={() => navigate('/openai-assistant')}
-                sx={{ justifyContent: 'flex-start' }}
-              >
-                AI Assistant
-              </Button>
-              {hasRole(['admin', 'management', 'fm']) && (
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  onClick={() => navigate('/financial-dashboard')}
-                  sx={{ justifyContent: 'flex-start' }}
-                >
-                  Financial Dashboard
-                </Button>
-              )}
-            </Box>
-          </Card>
-        </Grid>
+                <CardContent sx={{ width: '100%' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Avatar sx={{ bgcolor: feature.color, mr: 2 }}>
+                      {feature.icon}
+                    </Avatar>
+                    <Typography variant="h6" component="div" fontWeight="medium">
+                      {feature.title}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary">
+                    {feature.description}
+                  </Typography>
+                </CardContent>
+              </CardActionArea>
+            </Card>
+          </Grid>
+        ))}
       </Grid>
-    </Container>
+
+      {/* Quick Info Section */}
+      <Paper elevation={2} sx={{ mt: 4, p: 3, borderRadius: 2 }}>
+        <Typography variant="h6" gutterBottom>
+          Recent Updates
+        </Typography>
+        <Typography variant="body2" paragraph>
+          • Swimming pool maintenance scheduled for Jun 20th - Jun 22nd
+        </Typography>
+        <Typography variant="body2" paragraph>
+          • Community gathering on Jun 25th at the central garden
+        </Typography>
+        <Typography variant="body2">
+          • Monthly maintenance due by the 5th of each month
+        </Typography>
+      </Paper>
+    </Box>
   );
 };
 

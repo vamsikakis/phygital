@@ -393,16 +393,10 @@ const Communication: React.FC = () => {
           </Alert>
         )}
 
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" component="h1" sx={{ mb: 1, fontWeight: 700 }}>
-            Communication Management
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h5" component="h1">
+            Community Communication
           </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            Create announcements, manage events, and engage with the Gopalan Atlantis community
-          </Typography>
-        </Box>
-
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Button
             variant="contained"
             color="primary"
