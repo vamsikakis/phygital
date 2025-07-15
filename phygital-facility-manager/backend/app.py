@@ -21,7 +21,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
 app.config['OPENAI_API_KEY'] = os.getenv('OPENAI_API_KEY')
 
-# Configure CORS - Use manual configuration to avoid conflicts
+# Configure CORS with allowed origins
 cors_origins = [
     'https://www.thephygital.in',
     'https://thephygital.in',
@@ -34,39 +34,11 @@ env_origins = os.getenv('CORS_ORIGINS', '')
 if env_origins:
     cors_origins.extend(env_origins.split(','))
 
-# Don't use Flask-CORS to avoid conflicts - we'll handle CORS manually
-
-# Manual CORS handling to avoid conflicts
-@app.before_request
-def handle_preflight():
-    if request.method == "OPTIONS":
-        origin = request.headers.get('Origin')
-        app.logger.info(f"OPTIONS request from origin: {origin}")
-
-        response = jsonify({'status': 'OK'})
-
-        # Only set origin if it's in our allowed list
-        if origin in cors_origins:
-            response.headers['Access-Control-Allow-Origin'] = origin
-
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization,Accept,Origin,X-Requested-With'
-        response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS,PATCH'
-        response.headers['Access-Control-Allow-Credentials'] = 'true'
-        return response
-
-# Add CORS headers to all responses
-@app.after_request
-def after_request(response):
-    origin = request.headers.get('Origin')
-
-    # Only set CORS headers if origin is allowed and headers aren't already set
-    if origin in cors_origins and 'Access-Control-Allow-Origin' not in response.headers:
-        response.headers['Access-Control-Allow-Origin'] = origin
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization,Accept,Origin,X-Requested-With'
-        response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS,PATCH'
-        response.headers['Access-Control-Allow-Credentials'] = 'true'
-
-    return response
+CORS(app,
+     origins=cors_origins,
+     supports_credentials=True,
+     allow_headers=['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'])
 
 # Global variables for optional services
 openai_client = None
@@ -143,105 +115,6 @@ def root():
 @app.route('/health', methods=['GET'])
 def health_check():
     return jsonify({"status": "healthy"}), 200
-
-@app.route('/api/status', methods=['GET'])
-def api_status():
-    """API status with feature availability"""
-    return jsonify({
-        "status": "running",
-        "features": {
-            "openai_available": openai_client is not None,
-            "akc_module": akc is not None,
-            "oce_module": oce is not None,
-            "hdc_module": hdc is not None,
-            "assistant_service": openai_assistant_service is not None
-        },
-        "endpoints": {
-            "auth": "/api/auth/*",
-            "query": "/api/query",
-            "documents": "/api/akc/documents",
-            "announcements": "/api/oce/announcements"
-        }
-    }), 200
-
-# Basic endpoints that work without external dependencies
-@app.route('/api/firefly/test', methods=['GET'])
-def firefly_test_basic():
-    """Basic Firefly test endpoint"""
-    return jsonify({
-        "message": "Firefly endpoint available",
-        "status": "basic_mode",
-        "note": "Full Firefly integration requires additional configuration"
-    }), 200
-
-@app.route('/api/assistant/test', methods=['GET'])
-def assistant_test_basic():
-    """Basic Assistant test endpoint"""
-    return jsonify({
-        "message": "Assistant endpoint available",
-        "status": "basic_mode",
-        "openai_configured": openai_client is not None,
-        "note": "Full assistant requires OpenAI configuration"
-    }), 200
-
-# Basic auth endpoints (embedded to ensure they work)
-@app.route('/api/auth/register', methods=['POST'])
-def register():
-    """User registration endpoint"""
-    try:
-        data = request.get_json()
-
-        # Basic validation
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
-
-        email = data.get('email')
-        name = data.get('name')
-        role = data.get('role', 'Owner')  # Default role
-
-        if not email or not name:
-            return jsonify({"error": "Email and name are required"}), 400
-
-        # For now, just return success (we'll implement actual registration later)
-        return jsonify({
-            "message": "Registration successful",
-            "user": {
-                "email": email,
-                "name": name,
-                "role": role
-            }
-        }), 201
-
-    except Exception as e:
-        return jsonify({"error": "Registration failed", "details": str(e)}), 500
-
-@app.route('/api/auth/login', methods=['POST'])
-def login():
-    """User login endpoint"""
-    try:
-        data = request.get_json()
-
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
-
-        email = data.get('email')
-
-        if not email:
-            return jsonify({"error": "Email is required"}), 400
-
-        # For now, just return success (we'll implement actual authentication later)
-        return jsonify({
-            "message": "Login successful",
-            "user": {
-                "email": email,
-                "name": "Test User",
-                "role": "Owner"
-            },
-            "token": "dummy_token_for_testing"
-        }), 200
-
-    except Exception as e:
-        return jsonify({"error": "Login failed", "details": str(e)}), 500
 
 @app.route('/api/query', methods=['POST'])
 def process_query():
@@ -572,13 +445,13 @@ def get_all_announcements():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Register authentication routes - DISABLED (using embedded routes instead)
-# try:
-#     from routes.auth_routes import auth_bp
-#     app.register_blueprint(auth_bp, url_prefix='/api/auth')
-#     app.logger.info("Registered authentication routes")
-# except ImportError:
-#     app.logger.warning("Authentication routes not found")
+# Register authentication routes
+try:
+    from routes.auth_routes import auth_bp
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.logger.info("Registered authentication routes")
+except ImportError:
+    app.logger.warning("Authentication routes not found")
 
 # Register Assistant routes
 try:
