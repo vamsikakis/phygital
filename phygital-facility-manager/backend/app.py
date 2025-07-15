@@ -178,6 +178,65 @@ def assistant_test_basic():
         "note": "Full assistant requires OpenAI configuration"
     }), 200
 
+# Basic auth endpoints (embedded to ensure they work)
+@app.route('/api/auth/register', methods=['POST'])
+def register():
+    """User registration endpoint"""
+    try:
+        data = request.get_json()
+
+        # Basic validation
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        email = data.get('email')
+        name = data.get('name')
+        role = data.get('role', 'Owner')  # Default role
+
+        if not email or not name:
+            return jsonify({"error": "Email and name are required"}), 400
+
+        # For now, just return success (we'll implement actual registration later)
+        return jsonify({
+            "message": "Registration successful",
+            "user": {
+                "email": email,
+                "name": name,
+                "role": role
+            }
+        }), 201
+
+    except Exception as e:
+        return jsonify({"error": "Registration failed", "details": str(e)}), 500
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    """User login endpoint"""
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        email = data.get('email')
+
+        if not email:
+            return jsonify({"error": "Email is required"}), 400
+
+        # For now, just return success (we'll implement actual authentication later)
+        return jsonify({
+            "message": "Login successful",
+            "user": {
+                "email": email,
+                "name": "Test User",
+                "role": "Owner"
+            },
+            "token": "dummy_token_for_testing"
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": "Login failed", "details": str(e)}), 500
+
 @app.route('/api/query', methods=['POST'])
 def process_query():
     data = request.json
