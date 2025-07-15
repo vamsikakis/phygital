@@ -21,9 +21,46 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
 app.config['OPENAI_API_KEY'] = os.getenv('OPENAI_API_KEY')
 
-# Configure CORS with allowed origins
-cors_origins = os.getenv('CORS_ORIGINS', '*').split(',')
-CORS(app, origins=cors_origins, supports_credentials=True)
+# Configure CORS with proper settings for production
+cors_origins = [
+    'https://www.thephygital.in',
+    'https://thephygital.in',
+    'http://localhost:5173',
+    'http://localhost:3000'
+]
+
+# Add any additional origins from environment
+env_origins = os.getenv('CORS_ORIGINS', '')
+if env_origins:
+    cors_origins.extend(env_origins.split(','))
+
+CORS(app,
+     origins=cors_origins,
+     supports_credentials=True,
+     allow_headers=['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'])
+
+# Add explicit preflight handling
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        app.logger.info(f"OPTIONS request from origin: {request.headers.get('Origin')}")
+        response = jsonify({'status': 'OK'})
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,Accept,Origin,X-Requested-With")
+        response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS,PATCH")
+        return response
+
+# Add CORS headers to all responses
+@app.after_request
+def after_request(response):
+    origin = request.headers.get('Origin')
+    if origin in cors_origins or '*' in cors_origins:
+        response.headers.add('Access-Control-Allow-Origin', origin)
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept,Origin,X-Requested-With')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response
 
 # Global variables for optional services
 openai_client = None
