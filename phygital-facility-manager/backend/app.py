@@ -566,13 +566,13 @@ def get_all_announcements():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Register authentication routes
-try:
-    from routes.auth_routes import auth_bp
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.logger.info("Registered authentication routes")
-except ImportError:
-    app.logger.warning("Authentication routes not found")
+# Register authentication routes - DISABLED (using embedded routes instead)
+# try:
+#     from routes.auth_routes import auth_bp
+#     app.register_blueprint(auth_bp, url_prefix='/api/auth')
+#     app.logger.info("Registered authentication routes")
+# except ImportError:
+#     app.logger.warning("Authentication routes not found")
 
 # Register Assistant routes
 try:
