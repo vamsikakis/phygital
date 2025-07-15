@@ -21,7 +21,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
 app.config['OPENAI_API_KEY'] = os.getenv('OPENAI_API_KEY')
 
-# Configure CORS with proper settings for production
+# Configure CORS - Use manual configuration to avoid conflicts
 cors_origins = [
     'https://www.thephygital.in',
     'https://thephygital.in',
@@ -34,32 +34,38 @@ env_origins = os.getenv('CORS_ORIGINS', '')
 if env_origins:
     cors_origins.extend(env_origins.split(','))
 
-CORS(app,
-     origins=cors_origins,
-     supports_credentials=True,
-     allow_headers=['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
-     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'])
+# Don't use Flask-CORS to avoid conflicts - we'll handle CORS manually
 
-# Add explicit preflight handling
+# Manual CORS handling to avoid conflicts
 @app.before_request
 def handle_preflight():
     if request.method == "OPTIONS":
-        app.logger.info(f"OPTIONS request from origin: {request.headers.get('Origin')}")
+        origin = request.headers.get('Origin')
+        app.logger.info(f"OPTIONS request from origin: {origin}")
+
         response = jsonify({'status': 'OK'})
-        response.headers.add("Access-Control-Allow-Origin", "*")
-        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,Accept,Origin,X-Requested-With")
-        response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS,PATCH")
+
+        # Only set origin if it's in our allowed list
+        if origin in cors_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin
+
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization,Accept,Origin,X-Requested-With'
+        response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS,PATCH'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
         return response
 
 # Add CORS headers to all responses
 @app.after_request
 def after_request(response):
     origin = request.headers.get('Origin')
-    if origin in cors_origins or '*' in cors_origins:
-        response.headers.add('Access-Control-Allow-Origin', origin)
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept,Origin,X-Requested-With')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH')
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
+
+    # Only set CORS headers if origin is allowed and headers aren't already set
+    if origin in cors_origins and 'Access-Control-Allow-Origin' not in response.headers:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization,Accept,Origin,X-Requested-With'
+        response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS,PATCH'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+
     return response
 
 # Global variables for optional services
