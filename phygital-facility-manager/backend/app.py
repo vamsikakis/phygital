@@ -24,6 +24,11 @@ CORS(app)
 from routes.assistant_routes import assistant_bp
 app.register_blueprint(assistant_bp, url_prefix='/api/assistant')
 app.logger.info("Registered Assistant routes")
+
+# Register Authentication routes
+from routes.auth_routes import auth_bp
+app.register_blueprint(auth_bp, url_prefix='/api/auth')
+app.logger.info("Registered Authentication routes")
 # --- END MOVE ---
 
 # Initialize OpenAI Assistant on startup
@@ -70,6 +75,13 @@ def health_check():
 
 @app.route('/api/query', methods=['POST'])
 def process_query():
+    from auth import get_current_user
+
+    # Check authentication
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"error": "Authentication required"}), 401
+
     data = request.json
     if not data or 'query' not in data:
         return jsonify({"error": "Missing query parameter"}), 400
@@ -102,6 +114,13 @@ def process_query():
 @app.route('/api/akc/documents', methods=['GET'])
 def get_documents():
     try:
+        from auth import get_current_user
+
+        # Check authentication
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({"error": "Authentication required"}), 401
+
         documents = akc.get_documents()
         return jsonify({"documents": documents}), 200
     except Exception as e:
@@ -310,28 +329,44 @@ def get_vector_store_info():
 
 # User and authentication endpoints
 @app.route('/api/user', methods=['GET'])
-def get_current_user():
+def get_user_info():
     """Get current user information"""
     try:
-        # Mock user data for now with all possible properties
-        user = {
-            "id": "user_1",
-            "email": "resident@gopalanatlantis.com",
-            "name": "John Doe",
-            "full_name": "John Doe",
-            "apartment": "A-101",
-            "apartment_number": "A-101",
-            "role": "resident",
-            "roles": ["resident"],
-            "permissions": ["read_documents", "create_tickets", "view_announcements", "upload_documents"],
-            "access_level": "resident",
-            "is_admin": False,
-            "is_staff": False,
-            "is_resident": True,
-            "is_active": True,
-            "phone": "+91-9876543210",
-            "emergency_contact": "+91-9876543211",
-            "move_in_date": "2023-01-01",
+        from auth import get_current_user
+
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({"error": "Not authenticated"}), 401
+
+        # Return user data with role-based permissions
+        permissions = []
+        if current_user.role == 'admin':
+            permissions = ["all"]
+        elif current_user.role == 'management':
+            permissions = ["read_documents", "write_documents", "manage_communication", "manage_financial", "manage_tasks", "ai_assistant"]
+        elif current_user.role == 'fm':
+            permissions = ["read_documents", "write_documents", "manage_communication", "manage_tasks", "ai_assistant"]
+        else:  # owners
+            permissions = ["read_documents", "view_announcements", "view_financial", "view_tasks", "ai_assistant"]
+
+        user_data = {
+            "id": current_user.id,
+            "email": current_user.email,
+            "name": current_user.name,
+            "full_name": current_user.full_name,
+            "apartment": current_user.apartment,
+            "apartment_number": current_user.apartment,  # For backward compatibility
+            "role": current_user.role,
+            "roles": [current_user.role],
+            "permissions": permissions,
+            "access_level": current_user.role,
+            "is_admin": current_user.role == 'admin',
+            "is_staff": current_user.role in ['admin', 'management', 'fm'],
+            "is_resident": current_user.role == 'owners',
+            "is_active": current_user.is_active,
+            "email_verified": current_user.email_verified,
+            "last_login": current_user.last_login.isoformat() if current_user.last_login else None,
+            "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
             "preferences": {
                 "notifications": True,
                 "theme": "light",
@@ -339,16 +374,11 @@ def get_current_user():
             },
             "profile": {
                 "avatar": None,
-                "bio": "Resident of Gopalan Atlantis",
-                "interests": ["swimming", "fitness", "community_events"]
-            },
-            "subscription": {
-                "plan": "basic",
-                "status": "active",
-                "expires_at": "2024-12-31T23:59:59Z"
+                "bio": f"{current_user.role.title()} at Gopalan Atlantis",
+                "interests": []
             }
         }
-        return jsonify(user), 200
+        return jsonify(user_data), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

@@ -14,7 +14,7 @@ except ImportError as e:
     print(f"Warning: Database models not fully available: {e}")
     get_db_session = None
     User = None
-from auth import login_required, admin_required, staff_required, get_current_user
+from auth import login_required, admin_required, staff_required, management_required, get_current_user
 # Temporarily commented out missing function to allow server startup
 # from integrations.document_exports import generate_financial_report_pdf
 try:
@@ -104,7 +104,7 @@ def get_financial_report(report_id):
         query = session.query(FinancialReport)
         
         # Filter report based on user role and report id
-        if current_user.role not in ['admin', 'staff']:
+        if current_user.role not in ['admin', 'management', 'fm']:
             query = query.filter(FinancialReport.status == 'published')
             
         report = query.filter(FinancialReport.id == report_id).first()

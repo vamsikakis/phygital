@@ -2,6 +2,8 @@ from flask import request, jsonify, g, current_app
 from functools import wraps
 import os
 import jwt
+import bcrypt
+import secrets
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from db import get_db_session, User
@@ -13,28 +15,63 @@ load_dotenv()
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 JWT_EXPIRATION = int(os.getenv("JWT_EXPIRATION", 86400))  # Default to 24 hours
 
-def generate_token(user_id, role="resident", expiration=None):
+def hash_password(password):
+    """
+    Hash a password using bcrypt
+
+    Args:
+        password: Plain text password
+
+    Returns:
+        Hashed password string
+    """
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+
+def verify_password(password, hashed_password):
+    """
+    Verify a password against its hash
+
+    Args:
+        password: Plain text password
+        hashed_password: Hashed password from database
+
+    Returns:
+        bool: True if password matches, False otherwise
+    """
+    return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
+
+def generate_reset_token():
+    """
+    Generate a secure random token for password reset
+
+    Returns:
+        Random token string
+    """
+    return secrets.token_urlsafe(32)
+
+def generate_token(user_id, role="owners", expiration=None):
     """
     Generate a JWT token for authentication
-    
+
     Args:
         user_id: User ID for the token
-        role: User role (admin, resident, staff)
+        role: User role (admin, management, fm, owners)
         expiration: Token expiration in seconds
-        
+
     Returns:
         JWT token string
     """
     if expiration is None:
         expiration = JWT_EXPIRATION
-        
+
     payload = {
         'sub': user_id,
         'role': role,
         'exp': datetime.utcnow() + timedelta(seconds=expiration),
         'iat': datetime.utcnow()
     }
-    
+
     return jwt.encode(payload, JWT_SECRET_KEY, algorithm='HS256')
 
 def decode_token(token):
@@ -114,43 +151,87 @@ def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         current_user = get_current_user()
-        
+
         if not current_user:
             return jsonify({
                 'error': 'Unauthorized',
                 'message': 'Authentication is required for this resource'
             }), 401
-            
+
         if current_user.role != 'admin':
             return jsonify({
                 'error': 'Forbidden',
                 'message': 'Admin privileges are required for this resource'
             }), 403
-            
+
         return f(*args, **kwargs)
-        
+
     return decorated_function
 
-def staff_required(f):
-    """Decorator for routes that require staff or admin privileges"""
+def management_required(f):
+    """Decorator for routes that require management or admin privileges"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         current_user = get_current_user()
-        
+
         if not current_user:
             return jsonify({
                 'error': 'Unauthorized',
                 'message': 'Authentication is required for this resource'
             }), 401
-            
-        if current_user.role not in ['admin', 'staff']:
+
+        if current_user.role not in ['admin', 'management']:
+            return jsonify({
+                'error': 'Forbidden',
+                'message': 'Management privileges are required for this resource'
+            }), 403
+
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+def fm_required(f):
+    """Decorator for routes that require FM, management, or admin privileges"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        current_user = get_current_user()
+
+        if not current_user:
+            return jsonify({
+                'error': 'Unauthorized',
+                'message': 'Authentication is required for this resource'
+            }), 401
+
+        if current_user.role not in ['admin', 'management', 'fm']:
+            return jsonify({
+                'error': 'Forbidden',
+                'message': 'Facility Manager privileges are required for this resource'
+            }), 403
+
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+def staff_required(f):
+    """Decorator for routes that require staff privileges (management or fm) or admin"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        current_user = get_current_user()
+
+        if not current_user:
+            return jsonify({
+                'error': 'Unauthorized',
+                'message': 'Authentication is required for this resource'
+            }), 401
+
+        if current_user.role not in ['admin', 'management', 'fm']:
             return jsonify({
                 'error': 'Forbidden',
                 'message': 'Staff privileges are required for this resource'
             }), 403
-            
+
         return f(*args, **kwargs)
-        
+
     return decorated_function
 
 def validate_google_token(token):

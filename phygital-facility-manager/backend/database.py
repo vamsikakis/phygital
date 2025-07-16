@@ -48,12 +48,19 @@ class User(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     email = Column(String, unique=True, nullable=False)
+    password_hash = Column(String)  # For email/password authentication
     name = Column(String)
     full_name = Column(String)
     apartment = Column(String)  # Changed from apartment_number to apartment
-    role = Column(String, default='resident')  # admin, staff, resident
+    role = Column(String, default='owners')  # admin, management, fm, owners
     google_id = Column(String, unique=True)
+    is_active = Column(Boolean, default=True)
+    email_verified = Column(Boolean, default=False)
+    reset_token = Column(String)  # For password reset
+    reset_token_expires = Column(DateTime)
+    last_login = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class Document(Base):
     __tablename__ = 'documents'

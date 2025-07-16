@@ -6,7 +6,7 @@ from datetime import datetime
 import requests
 
 from db import get_db_session
-from auth import get_current_user, admin_required
+from auth import get_current_user, admin_required, staff_required, management_required
 
 # Supabase configuration
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -95,7 +95,7 @@ def send_notification():
         return jsonify({'error': str(e)}), 500
 
 @notification_bp.route('/announcement', methods=['POST'])
-@admin_required
+@management_required
 def send_announcement():
     """
     Send an announcement notification to all apartment owners or a specific group

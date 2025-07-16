@@ -13,13 +13,14 @@ from integrations.storage import (
 )
 from integrations.document_exports import DocumentExporter
 from db import get_db_session
-from auth import get_current_user, admin_required
+from auth import get_current_user, admin_required, staff_required, login_required
 
 # Create blueprint
 documents_bp = Blueprint('documents', __name__)
 document_exporter = DocumentExporter()
 
 @documents_bp.route('', methods=['GET'])
+@login_required
 def get_documents():
     """Get all documents from OpenAI Vector Store"""
     try:
@@ -63,6 +64,7 @@ def get_documents():
         return jsonify({'error': str(e)}), 500
 
 @documents_bp.route('/<document_id>', methods=['GET'])
+@login_required
 def get_document(document_id):
     """Get a single document by ID"""
     try:
